@@ -353,7 +353,7 @@ private:
 		vector<Vec3f> normals;
 	};
 
-	VisibleQuadContainerVBOCache * GetSurfaceVBOs(SurfaceData *cellData);
+	//VisibleQuadContainerVBOCache * GetSurfaceVBOs(SurfaceData *cellData);
 	void ReleaseSurfaceVBOs();
 	std::map<string,std::pair<Chrono, std::vector<SurfaceData> > > mapSurfaceData;
 	static bool rendererEnded;
@@ -371,11 +371,15 @@ private:
 
 		const Map* map;
 		struct Layer {
-			inline Layer(int th):
+			inline explicit Layer(int th):
 				vbo_vertices(0), vbo_normals(0), 
 				vbo_fowTexCoords(0), vbo_surfTexCoords(0),
 				vbo_indices(0), indexCount(0),
 				textureHandle(th),textureCRC(0) {}
+
+			inline explicit Layer(Layer &obj) {
+				*this = obj;
+			}
 
 			inline Layer & operator=(Layer &obj) {
 				this->vertices = obj.vertices;
@@ -423,8 +427,8 @@ private:
 	} mapRenderer;
 
 	bool ExtractFrustum(VisibleQuadContainerCache &quadCacheItem);
-	bool PointInFrustum(vector<vector<float> > &frustum, float x, float y, float z );
-	bool SphereInFrustum(vector<vector<float> > &frustum,  float x, float y, float z, float radius);
+	//bool PointInFrustum(vector<vector<float> > &frustum, float x, float y, float z );
+	//bool SphereInFrustum(vector<vector<float> > &frustum,  float x, float y, float z, float radius);
 	bool CubeInFrustum(vector<vector<float> > &frustum, float x, float y, float z, float size );
 
 private:
@@ -460,7 +464,7 @@ public:
 	inline int getPointCount() const		{return pointCount;}
 
 	//misc
-	void reloadResources();
+	//void reloadResources();
 
 	//engine interface
 	void initTexture(ResourceScope rs, Texture *texture);
@@ -476,7 +480,7 @@ public:
 	Font2D *newFont(ResourceScope rs);
 	Font3D *newFont3D(ResourceScope rs);
 	void endFont(::Shared::Graphics::Font *font, ResourceScope rs, bool mustExistInList=false);
-	void resetFontManager(ResourceScope rs);
+	//void resetFontManager(ResourceScope rs);
 
 	inline TextRenderer2D *getTextRenderer() const	{return textRenderer;}
 	inline TextRenderer3D *getTextRenderer3D() const	{return textRenderer3D;}
@@ -492,7 +496,7 @@ public:
 
     //lights and camera
 	void setupLighting();
-	void setupLightingForRotatedModel();
+	//void setupLightingForRotatedModel();
 	void loadGameCameraMatrix();
 	void loadCameraMatrix(const Camera *camera);
 	void computeVisibleQuad();
@@ -546,6 +550,7 @@ public:
     void renderLine(const GraphicLine *line);
     void renderScrollBar(const GraphicScrollBar *sb);
     void renderListBox(GraphicListBox *listBox);
+    void renderComboBox(GraphicComboBox *comboBox);
 	void renderMessageBox(GraphicMessageBox *listBox);
 	void renderPopupMenu(PopupMenu *menu);
 
@@ -626,7 +631,7 @@ public:
 
 	VisibleQuadContainerCache & getQuadCache(bool updateOnDirtyFrame=true,bool forceNew=false);
 	std::pair<bool,Vec3f> posInCellQuadCache(Vec2i pos);
-	Vec3f getMarkedCellScreenPosQuadCache(Vec2i pos);
+	//Vec3f getMarkedCellScreenPosQuadCache(Vec2i pos);
 	void updateMarkedCellScreenPosQuadCache(Vec2i pos);
 	void forceQuadCacheUpdate();
 	void renderVisibleMarkedCells(bool renderTextHint=false,int x=-1, int y=-1);
@@ -640,7 +645,7 @@ public:
 	std::size_t getCurrentPixelByteCount(ResourceScope rs=rsGame) const;
 	unsigned int getSaveScreenQueueSize();
 
-	Texture2D *saveScreenToTexture(int x, int y, int width, int height);
+	//Texture2D *saveScreenToTexture(int x, int y, int width, int height);
 
 	void renderProgressBar(int size, int x, int y, Font2D *font,int customWidth=-1, string prefixLabel="", bool centeredText=true);
 
@@ -653,7 +658,7 @@ public:
 	void setCustom3dMenu(const MainMenu *mm) { this->custom_mm3d = mm; }
 	const MainMenu * getCustom3dMenu() { return this->custom_mm3d; }
 
-	void init3dListMenu(const MainMenu *mm);
+	//void init3dListMenu(const MainMenu *mm);
 
 	void setProgram(Program *program) { this->program = program; }
 
@@ -695,7 +700,7 @@ private:
 	void internalRenderHp(int numberOfBars, int barNumber, float hp, Vec3f posVector, float width, float singleHPheight, Vec3f rightVector, Vec3f upVector);
 	void renderTeamColorEffect(Vec3f &v, int heigth, int size, Vec3f color, const Texture2D *texture);
 	void renderArrow(const Vec3f &pos1, const Vec3f &pos2, const Vec3f &color, float width);
-	void renderTile(const Vec2i &pos);
+	//void renderTile(const Vec2i &pos);
 	void renderQuad(int x, int y, int w, int h, const Texture2D *texture);
 
 	void simpleTask(BaseThread *callingThread,void *userdata);

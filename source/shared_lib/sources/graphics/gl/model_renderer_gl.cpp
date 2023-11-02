@@ -163,6 +163,7 @@ void ModelRendererGl::renderMesh(Mesh *mesh,int renderMode) {
 	{// don't render this and do nothing
 		return;
 	}
+
 	//assertions
 	assertGl();
 

@@ -304,11 +304,11 @@ void UnitType::loaddd(int id,const string &dir, const TechTree *techTree,
 			startHpType= stPercentage;
 		}
 
-		// No start value set; use max HP before upgrades
+		// No start value is set; use 100% of the current Max
 		if(!parametersNode->getChild("max-hp")->hasAttribute("start-value") &&
 				!parametersNode->getChild("max-hp")->hasAttribute("start-percentage")) {
-			startHpValue= parametersNode->getChild("max-hp")->getAttribute("value")->getIntValue();
-			startHpType= stValue;
+			startHpPercentage=100;
+			startHpType= stPercentage;
 		}
 		addItemToVault(&(this->startHpPercentage),this->startHpPercentage);
 
@@ -922,6 +922,7 @@ const Level *UnitType::getLevel(string name) const {
 
 const CommandType *UnitType::getFirstCtOfClass(CommandClass commandClass) const{
 	if(firstCommandTypeOfClass[commandClass] == NULL) {
+		return NULL;
 		//if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d] commandClass = %d\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__,commandClass);
 
 		/*
@@ -1184,15 +1185,15 @@ bool UnitType::hasCommandType(const CommandType *commandType) const {
     return false;
 }
 
-bool UnitType::hasSkillType(const SkillType *skillType) const {
-    assert(skillType!=NULL);
-    for(int i=0; i < (int)skillTypes.size(); ++i) {
-        if(skillTypes[i]==skillType) {
-            return true;
-        }
-    }
-    return false;
-}
+//bool UnitType::hasSkillType(const SkillType *skillType) const {
+//    assert(skillType!=NULL);
+//    for(int i=0; i < (int)skillTypes.size(); ++i) {
+//        if(skillTypes[i]==skillType) {
+//            return true;
+//        }
+//    }
+//    return false;
+//}
 
 bool UnitType::isOfClass(UnitClass uc) const{
 	switch(uc){

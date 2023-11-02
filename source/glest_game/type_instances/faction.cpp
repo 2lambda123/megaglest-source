@@ -345,10 +345,13 @@ void FactionThread::execute() {
 				codeLocation = "7";
 				//Config &config= Config::getInstance();
 				//bool sortedUnitsAllowed = config.getBool("AllowGroupedUnitCommands","true");
-				bool sortedUnitsAllowed = false;
-				if(sortedUnitsAllowed == true) {
-					this->faction->sortUnitsByCommandGroups();
-				}
+				//bool sortedUnitsAllowed = false;
+				//if(sortedUnitsAllowed == true) {
+				
+				/// TODO: Why does this cause an OOS?
+				//this->faction->sortUnitsByCommandGroups();
+                
+				//}
 
 				codeLocation = "8";
 				static string mutexOwnerId2 = string(__FILE__) + string("_") + intToStr(__LINE__);
@@ -633,18 +636,18 @@ void Faction::removeUnitFromMovingList(int unitId) {
 	unitsMovingList.erase(unitId);
 }
 
-int Faction::getUnitMovingListCount() {
-	return (int)unitsMovingList.size();
-}
+//int Faction::getUnitMovingListCount() {
+//	return (int)unitsMovingList.size();
+//}
 
 void Faction::addUnitToPathfindingList(int unitId) {
 	//printf("ADD (1) Faction [%d - %s] threaded updates for [%d] units\n",this->getStartLocationIndex(),this->getType()->getName().c_str(),unitsPathfindingList.size());
 	unitsPathfindingList[unitId] = getWorld()->getFrameCount();
 	//printf("ADD (2) Faction [%d - %s] threaded updates for [%d] units\n",this->getStartLocationIndex(),this->getType()->getName().c_str(),unitsPathfindingList.size());
 }
-void Faction::removeUnitFromPathfindingList(int unitId) {
-	unitsPathfindingList.erase(unitId);
-}
+//void Faction::removeUnitFromPathfindingList(int unitId) {
+//	unitsPathfindingList.erase(unitId);
+//}
 
 int Faction::getUnitPathfindingListCount() {
 	//printf("GET Faction [%d - %s] threaded updates for [%d] units\n",this->getStartLocationIndex(),this->getType()->getName().c_str(),unitsPathfindingList.size());
@@ -949,11 +952,11 @@ int Faction::getCountForMaxUnitCount(const UnitType *unitType) const{
    	for(int j=0; j<getUnitCount(); ++j){
 		Unit *unit= getUnit(j);
         const UnitType *currentUt= unit->getType();
-        if(unitType==currentUt && unit->isOperative()){
+        if(unitType==currentUt && ( unit->isAlive())){
             count++;
         }
         //check if there is any command active which already produces this unit
-        count=count+unit->getCountOfProducedUnits(unitType);
+        count=count+unit->getCountOfProducedUnitsPreExistence(unitType);
     }
 	return count;
 }
@@ -1178,8 +1181,10 @@ void Faction::deApplyStaticConsumption(const ProducibleType *p,const CommandType
 }
 
 //apply resource on interval (cosumable resouces)
-void Faction::applyCostsOnInterval(const ResourceType *rtApply) {
+// returns true if warning sound for food etc is needed
+bool Faction::applyCostsOnInterval(const ResourceType *rtApply) {
 
+	bool warningSoundNeeded=false;
 	// For each Resource type we store in the int a total consumed value, then
 	// a vector of units that consume the resource type
 	std::map<const ResourceType *, std::pair<int, std::vector<Unit *> > > resourceIntervalUsage;
@@ -1216,6 +1221,20 @@ void Faction::applyCostsOnInterval(const ResourceType *rtApply) {
 			int resourceTypeUsage = iter->second.first;
 			incResourceAmount(rt, resourceTypeUsage);
 
+			if (rt->getClass() == rcConsumable  ) {
+				const Resource *r = getResource(rt);
+				if (r->getBalance() * 5 + r->getAmount() < 0 && r->getAmount() >= 0) {
+					// warning for player and team( if shared resources or control )
+					bool sharedTeamResources = world->getGame()->isFlagType1BitEnabled(ft1_allow_shared_team_resources);
+					bool sharedTeamUnits = world->getGame()->isFlagType1BitEnabled(ft1_allow_shared_team_units);
+					bool isTeam = ( this->getTeam() == world->getThisTeamIndex());
+
+					if (this->getIndex() == world->getThisFactionIndex() || (isTeam && (sharedTeamResources || sharedTeamUnits))) {
+						warningSoundNeeded=true;
+					}
+				}
+			}
+
 			// Check if we have any unit consumers
 			if(getResource(rt)->getAmount() < 0) {
 				resetResourceAmount(rt);
@@ -1244,9 +1263,10 @@ void Faction::applyCostsOnInterval(const ResourceType *rtApply) {
 			}
 		}
 	}
+	return warningSoundNeeded;
 }
 
-bool Faction::checkCosts(const ProducibleType *pt,const CommandType *ct) {
+int Faction::getAmountOfProducable(const ProducibleType *pt,const CommandType *ct) {
 	assert(pt != NULL);
 
 	bool ignoreResourceCosts = false;
@@ -1258,6 +1278,7 @@ bool Faction::checkCosts(const ProducibleType *pt,const CommandType *ct) {
 		//printf("Checking costs = %d for commandtype:\n%s\n",ignoreResourceCosts,mct->getDesc(NULL).c_str());
 	}
 
+	int maxAmount=INT_MAX;
 	if(ignoreResourceCosts == false) {
 		//for each unit cost check if enough resources
 		for(int i = 0; i < pt->getCostCount(); ++i) {
@@ -1265,14 +1286,22 @@ bool Faction::checkCosts(const ProducibleType *pt,const CommandType *ct) {
 			int cost= pt->getCost(i)->getAmount();
 			if(cost > 0) {
 				int available= getResource(rt)->getAmount();
-				if(cost > available){
-					return false;
+				int possibleCount=available/cost;
+				if( maxAmount>possibleCount)
+					maxAmount=possibleCount;
+				if(maxAmount==0){
+					break;
 				}
 			}
 		}
 	}
 
-	return true;
+	return maxAmount;
+}
+
+
+bool Faction::checkCosts(const ProducibleType *pt,const CommandType *ct) {
+	return getAmountOfProducable(pt,ct)>0;
 }
 
 // ================== diplomacy ==================
@@ -1792,8 +1821,8 @@ void Faction::cleanupResourceTypeTargetCache(std::vector<Vec2i> *deleteListPtr,i
 
 				if(deleteList.empty() == false) {
 					if(SystemFlags::getSystemSettingType(SystemFlags::debugWorldSynch).enabled == true) {
-						char szBuf[8096]="";
-						snprintf(szBuf,8096,"[cleaning old resource targets] deleteList.size() [" MG_SIZE_T_SPECIFIER "] cacheResourceTargetList.size() [" MG_SIZE_T_SPECIFIER "], needToCleanup [%d]",
+						char szBuf[8095]="";
+						snprintf(szBuf,8095,"[cleaning old resource targets] deleteList.size() [" MG_SIZE_T_SPECIFIER "] cacheResourceTargetList.size() [" MG_SIZE_T_SPECIFIER "], needToCleanup [%d]",
 											deleteList.size(),cacheResourceTargetList.size(),needToCleanup);
 						//unit->logSynchData(szBuf);
 
@@ -1939,84 +1968,84 @@ void Faction::deletePixels() {
 	}
 }
 
-Unit * Faction::findClosestUnitWithSkillClass(	const Vec2i &pos,const CommandClass &cmdClass,
-												const std::vector<SkillClass> &skillClassList,
-												const UnitType *unitType) {
-	Unit *result = NULL;
-
-/*
-	std::map<CommandClass,std::map<int,int> >::iterator iterFind = cacheUnitCommandClassList.find(cmdClass);
-	if(iterFind != cacheUnitCommandClassList.end()) {
-		for(std::map<int,int>::iterator iter = iterFind->second.begin();
-				iter != iterFind->second.end(); ++iter) {
-			Unit *curUnit = findUnit(iter->second);
-			if(curUnit != NULL) {
-
-				const CommandType *cmdType = curUnit->getType()->getFirstCtOfClass(cmdClass);
-				bool isUnitPossibleCandidate = (cmdType != NULL);
-				if(skillClassList.empty() == false) {
-					isUnitPossibleCandidate = false;
-
-					for(int j = 0; j < skillClassList.size(); ++j) {
-						SkillClass skValue = skillClassList[j];
-						if(curUnit->getCurrSkill()->getClass() == skValue) {
-							isUnitPossibleCandidate = true;
-							break;
-						}
-					}
-				}
-
-				if(isUnitPossibleCandidate == true) {
-					if(result == NULL || curUnit->getPos().dist(pos) < result->getPos().dist(pos)) {
-						result = curUnit;
-					}
-				}
-			}
-		}
-	}
-*/
-
-	if(result == NULL) {
-		for(int i = 0; i < getUnitCount(); ++i) {
-			Unit *curUnit = getUnit(i);
-
-			bool isUnitPossibleCandidate = false;
-
-			const CommandType *cmdType = curUnit->getType()->getFirstCtOfClass(cmdClass);
-			if(cmdType != NULL) {
-				const RepairCommandType *rct = dynamic_cast<const RepairCommandType *>(cmdType);
-				if(rct != NULL && rct->isRepairableUnitType(unitType)) {
-					isUnitPossibleCandidate = true;
-				}
-			}
-			else {
-				isUnitPossibleCandidate = false;
-			}
-
-			if(isUnitPossibleCandidate == true && skillClassList.empty() == false) {
-				isUnitPossibleCandidate = false;
-
-				for(int j = 0; j < (int)skillClassList.size(); ++j) {
-					SkillClass skValue = skillClassList[j];
-					if(curUnit->getCurrSkill()->getClass() == skValue) {
-						isUnitPossibleCandidate = true;
-						break;
-					}
-				}
-			}
-
-
-			if(isUnitPossibleCandidate == true) {
-				//cacheUnitCommandClassList[cmdClass][curUnit->getId()] = curUnit->getId();
-
-				if(result == NULL || curUnit->getPos().dist(pos) < result->getPos().dist(pos)) {
-					result = curUnit;
-				}
-			}
-		}
-	}
-	return result;
-}
+//Unit * Faction::findClosestUnitWithSkillClass(	const Vec2i &pos,const CommandClass &cmdClass,
+//												const std::vector<SkillClass> &skillClassList,
+//												const UnitType *unitType) {
+//	Unit *result = NULL;
+//
+///*
+//	std::map<CommandClass,std::map<int,int> >::iterator iterFind = cacheUnitCommandClassList.find(cmdClass);
+//	if(iterFind != cacheUnitCommandClassList.end()) {
+//		for(std::map<int,int>::iterator iter = iterFind->second.begin();
+//				iter != iterFind->second.end(); ++iter) {
+//			Unit *curUnit = findUnit(iter->second);
+//			if(curUnit != NULL) {
+//
+//				const CommandType *cmdType = curUnit->getType()->getFirstCtOfClass(cmdClass);
+//				bool isUnitPossibleCandidate = (cmdType != NULL);
+//				if(skillClassList.empty() == false) {
+//					isUnitPossibleCandidate = false;
+//
+//					for(int j = 0; j < skillClassList.size(); ++j) {
+//						SkillClass skValue = skillClassList[j];
+//						if(curUnit->getCurrSkill()->getClass() == skValue) {
+//							isUnitPossibleCandidate = true;
+//							break;
+//						}
+//					}
+//				}
+//
+//				if(isUnitPossibleCandidate == true) {
+//					if(result == NULL || curUnit->getPos().dist(pos) < result->getPos().dist(pos)) {
+//						result = curUnit;
+//					}
+//				}
+//			}
+//		}
+//	}
+//*/
+//
+//	//if(result == NULL) {
+//		for(int i = 0; i < getUnitCount(); ++i) {
+//			Unit *curUnit = getUnit(i);
+//
+//			bool isUnitPossibleCandidate = false;
+//
+//			const CommandType *cmdType = curUnit->getType()->getFirstCtOfClass(cmdClass);
+//			if(cmdType != NULL) {
+//				const RepairCommandType *rct = dynamic_cast<const RepairCommandType *>(cmdType);
+//				if(rct != NULL && rct->isRepairableUnitType(unitType)) {
+//					isUnitPossibleCandidate = true;
+//				}
+//			}
+//			else {
+//				isUnitPossibleCandidate = false;
+//			}
+//
+//			if(isUnitPossibleCandidate == true && skillClassList.empty() == false) {
+//				isUnitPossibleCandidate = false;
+//
+//				for(int j = 0; j < (int)skillClassList.size(); ++j) {
+//					SkillClass skValue = skillClassList[j];
+//					if(curUnit->getCurrSkill()->getClass() == skValue) {
+//						isUnitPossibleCandidate = true;
+//						break;
+//					}
+//				}
+//			}
+//
+//
+//			if(isUnitPossibleCandidate == true) {
+//				//cacheUnitCommandClassList[cmdClass][curUnit->getId()] = curUnit->getId();
+//
+//				if(result == NULL || curUnit->getPos().dist(pos) < result->getPos().dist(pos)) {
+//					result = curUnit;
+//				}
+//			}
+//		}
+//	//}
+//	return result;
+//}
 
 int Faction::getFrameCount() {
 	int frameCount = 0;

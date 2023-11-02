@@ -51,6 +51,7 @@ enum StatusItems {
 	siFILE_TYPE,
 	siCURR_OBJECT,
 	siBRUSH_TYPE,
+    siBRUSH_OVERWRITE,
 	siBRUSH_VALUE,
 	siBRUSH_RADIUS,
 	siPOS_VALUE,
@@ -137,6 +138,8 @@ private:
 		miEditMirror,
 
 		miEditRandomizeHeights,
+        miEditImportHeights,
+        miEditExportHeights,
 		miEditRandomize,
 		miEditSwitchSurfaces,
 		miEditInfo,
@@ -186,6 +189,7 @@ private:
 	wxFileDialog *fileDialog;
 
 	string currentFile;
+	wxString heightMapDirectory;
 
 	BrushType currentBrush;
 	int height;
@@ -196,6 +200,9 @@ private:
 	int startLocation;
 	int resourceUnderMouse;
 	int objectUnderMouse;
+    pair<int,int> mouse_pos;
+
+    bool shiftModifierKey;
 
 	bool randomWithReset;
 	int randomMinimumHeight;
@@ -215,11 +222,13 @@ private:
 	string appPath;
 
 public:
-	MainWindow(string appPath);
+	explicit MainWindow(string appPath);
 	~MainWindow();
 
 	void refreshMapRender();
 	void init(string fname);
+
+	void refreshThings();
 
 	void onClose(wxCloseEvent &event);
 
@@ -230,6 +239,7 @@ public:
 
 	void onPaint(wxPaintEvent &event);
 	void onKeyDown(wxKeyEvent &e);
+    void onKeyUp(wxKeyEvent &e);
 
 	void onMenuFileLoad(wxCommandEvent &event);
 	void onMenuFileSave(wxCommandEvent &event);
@@ -254,6 +264,8 @@ public:
 	void onMenuEditRotatecopyCorner(wxCommandEvent &event); // copy top left 1/4 to top right 1/4, rotated
 
 	void onMenuEditRandomizeHeights(wxCommandEvent &event);
+    void onMenuEditImportHeights(wxCommandEvent &event);
+    void onMenuEditExportHeights(wxCommandEvent &event);
 	void onMenuEditRandomize(wxCommandEvent &event);
 	void onMenuEditSwitchSurfaces(wxCommandEvent &event);
 	void onMenuEditInfo(wxCommandEvent &event);
@@ -306,6 +318,7 @@ public:
 	void onMouseMove(wxMouseEvent &event);
 	void onMouseWheel(wxMouseEvent &event);
 	void onKeyDown(wxKeyEvent &event);
+    void onKeyUp(wxKeyEvent &event);
     void onPaint(wxPaintEvent &event);
 
     void setCurrentGLContext();

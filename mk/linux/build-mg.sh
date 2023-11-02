@@ -19,6 +19,7 @@ CMAKE_ONLY=0
 MAKE_ONLY=0
 CLANG_FORCED=0
 WANT_STATIC_LIBS="-DWANT_STATIC_LIBS=ON"
+WANT_STATIC_WX_LIBS=0
 FORCE_EMBEDDED_LIBS=0
 GCC_FORCED_VERSION=0
 LUA_FORCED_VERSION=0
@@ -26,7 +27,7 @@ FORCE_32BIT_CROSS_COMPILE=0
 COMPILATION_WITHOUT=0
 BUILD_MEGAGLEST_TESTS="ON"
 
-while getopts "c:defg:hl:mnwx" option; do
+while getopts "c:defg:hl:mnswx" option; do
    case "${option}" in
         c)
            CPU_COUNT=${OPTARG}
@@ -60,6 +61,7 @@ while getopts "c:defg:hl:mnwx" option; do
                 echo "       -l x : Force using LUA version x - example: -l 5.3"
                 echo "       -m   : Force running CMAKE only to create Make files (do not compile)"
                 echo "       -n   : Force running MAKE only to compile (assume CMAKE already built make files)"
+                echo "       -s   : Force compilation of wxWidgets STATIC libs"                
                 echo "       -w   : Force compilation 'Without using wxWidgets'"
                 echo "       -x   : Force cross compiling on x64 linux to produce an x86 32 bit binary"
 
@@ -77,6 +79,10 @@ while getopts "c:defg:hl:mnwx" option; do
         ;;
         n)
            MAKE_ONLY=1
+#           echo "${option} value: ${OPTARG}"
+        ;;
+        s)
+           WANT_STATIC_WX_LIBS=1
 #           echo "${option} value: ${OPTARG}"
         ;;
         w)
@@ -158,12 +164,16 @@ echo 'We have detected the following system:'
 echo ' [ '"$distribution"' ] [ '"$release"' ] [ '"$codename"' ] [ '"$architecture"' ]'
 
 if [ "$release" = "rolling" ] && [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
-	echo 'Turning ON dynamic LIBS ...'
 	WANT_STATIC_LIBS="-DWANT_STATIC_LIBS=OFF"
 fi
 
 if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
 	EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_FontConfig=OFF"
+fi
+
+if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ] && \
+	[ "$WANT_STATIC_WX_LIBS" != "0" ] && [ "$WANT_STATIC_WX_LIBS" != "" ]; then
+	EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_wxWidgets=ON"
 fi
 
 if [ "$distribution" != "Mageia" ]; then
@@ -183,8 +193,8 @@ case $distribution in
 				;;
 			*)
 				if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
-					echo 'Turning ON dynamic FTGL, LUA, PNG ... and forcing use the embedded IRCCLIENT'
-					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_FTGL=OFF -DSTATIC_LUA=OFF -DSTATIC_PNG=OFF -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
+					echo 'Turning ON dynamic OGG ... and forcing use the embedded IRCCLIENT'
+					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
 				fi
 				if [ $CLANG_FORCED = 1 ]; then BUILD_MEGAGLEST_TESTS="OFF"; fi
 				# ^ may be removed ~ when default clang's version will be 3.9+
@@ -203,17 +213,24 @@ case $distribution in
 				;;
 			*)
 				if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
-					echo 'Turning ON dynamic FTGL, LUA, PNG ... and forcing use the embedded IRCCLIENT'
-					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_FTGL=OFF -DSTATIC_LUA=OFF -DSTATIC_PNG=OFF -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
+					echo 'Turning ON dynamic OGG ... and forcing use the embedded IRCCLIENT'
+					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
 				fi
 				;;
 		esac
 		;;
 
-	LinuxMint)
+	LinuxMint|Linuxmint)
 		case $release in
+			2)
+				#LMDE
+				if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
+					echo 'Turning ON dynamic FTGL, LUA, JPEG, PNG ... and forcing use the embedded IRCCLIENT'
+					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_FTGL=OFF -DSTATIC_LUA=OFF -DSTATIC_JPEG=OFF -DSTATIC_PNG=OFF -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
+				fi
+				;;
 			13|13.*|14|15|16|17|17.*) ;;
-			18|18.*|19|19.*)
+			18|18.*)
 				if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
 					echo 'Turning ON dynamic FTGL, LUA, JPEG, PNG ... and forcing use the embedded IRCCLIENT'
 					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_FTGL=OFF -DSTATIC_LUA=OFF -DSTATIC_JPEG=OFF -DSTATIC_PNG=OFF -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
@@ -221,14 +238,14 @@ case $distribution in
 				;;
 			*)
 				if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
-					echo 'Turning ON dynamic FTGL, LUA, PNG ... and forcing use the embedded IRCCLIENT'
-					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_FTGL=OFF -DSTATIC_LUA=OFF -DSTATIC_PNG=OFF -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
+					echo 'Turning ON dynamic OGG ... and forcing use the embedded IRCCLIENT'
+					EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DSTATIC_OGG=OFF -DFORCE_USE_EMBEDDED_Ircclient=ON"
 				fi
 				;;
 		esac
 		;;
 
-	SuSE|SUSE?LINUX|Opensuse|Fedora|Mageia)
+	SuSE|SUSE?LINUX|Opensuse|Fedora|Mageia|ManjaroLinux)
 		case $release in
 			*)
 				if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
@@ -240,11 +257,14 @@ case $distribution in
 
 	Arch)
 		if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
-			echo 'Turning ON dynamic LIBS ...'
 			WANT_STATIC_LIBS="-DWANT_STATIC_LIBS=OFF"
 		fi
 		;;
 esac
+
+if [ "$WANT_STATIC_LIBS" = "-DWANT_STATIC_LIBS=ON" ]; then
+	echo 'Turning ON dynamic LIBS ...'
+fi
 
 # If, in the configuration section on top of this script, the user has
 # indicated they want to use clang in favor of the default of GCC, use clang.
@@ -295,7 +315,7 @@ if [ "$COMPILATION_WITHOUT" != "0" ] && [ "$COMPILATION_WITHOUT" != "" ]; then
 fi
 
 if [ $MAKE_ONLY = 0 ]; then
-        echo "Calling cmake with EXTRA_CMAKE_OPTIONS = ${EXTRA_CMAKE_OPTIONS}"
+        echo "Calling cmake with EXTRA_CMAKE_OPTIONS = ${EXTRA_CMAKE_OPTIONS} AND WANT_STATIC_LIBS = ${WANT_STATIC_LIBS}"
         cmake -DCMAKE_INSTALL_PREFIX='' -DWANT_DEV_OUTPATH=ON $WANT_STATIC_LIBS -DBUILD_MEGAGLEST_TESTS=$BUILD_MEGAGLEST_TESTS -DBREAKPAD_ROOT=$BREAKPAD_ROOT $EXTRA_CMAKE_OPTIONS ../../..
         if [ $? -ne 0 ]; then
           echo 'ERROR: CMAKE failed.' >&2; exit 1

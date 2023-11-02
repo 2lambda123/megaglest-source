@@ -44,7 +44,7 @@ protected:
 	virtual void setTaskCompleted(int frameIndex);
 
 public:
-	AiInterfaceThread(AiInterface *aiIntf);
+	explicit AiInterfaceThread(AiInterface *aiIntf);
 	virtual ~AiInterfaceThread();
     virtual void execute();
     void signal(int frameIndex);
@@ -134,11 +134,11 @@ public:
     int getFactionCount();
     int getMyUnitCount() const;
 	int getMyUpgradeCount() const;
-    int onSightUnitCount();
+    //int onSightUnitCount();
     const Resource *getResource(const ResourceType *rt);
     const Unit *getMyUnit(int unitIndex);
     Unit *getMyUnitPtr(int unitIndex);
-    const Unit *getOnSightUnit(int unitIndex);
+    //const Unit *getOnSightUnit(int unitIndex);
     const FactionType *getMyFactionType();
     Faction *getMyFaction();
     const TechTree *getTechTree();

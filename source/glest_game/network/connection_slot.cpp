@@ -98,10 +98,10 @@ void ConnectionSlotThread::setTaskCompleted(int eventId) {
 	}
 }
 
-void ConnectionSlotThread::purgeAllEvents() {
-    MutexSafeWrapper safeMutex(triggerIdMutex,CODE_AT_LINE);
-    eventList.clear();
-}
+//void ConnectionSlotThread::purgeAllEvents() {
+//    MutexSafeWrapper safeMutex(triggerIdMutex,CODE_AT_LINE);
+//    eventList.clear();
+//}
 
 void ConnectionSlotThread::setAllEventsCompleted() {
     MutexSafeWrapper safeMutex(triggerIdMutex,CODE_AT_LINE);
@@ -1393,7 +1393,7 @@ void ConnectionSlot::update(bool checkForNewClients,int lockedSlotIndex) {
 								double maxClientLagTimeAllowed 		= 8;
 
 								// New lag check
-								if((maxFrameCountLagAllowed > 0 && clientLagCount > maxFrameCountLagAllowed) ||
+								if((clientLagCount > maxFrameCountLagAllowed) ||
 									(maxClientLagTimeAllowed > 0 && clientLagTime > maxClientLagTimeAllowed)) {
 
 									waitForLaggingClient = true;
@@ -1460,12 +1460,12 @@ void ConnectionSlot::validateConnection() {
 	}
 }
 
-void ConnectionSlot::resetJoinGameInProgressFlags() {
-	this->gotIntro 				= false;
-	this->skipLagCheck 			= false;
-	this->joinGameInProgress 	= false;
-	this->ready					= false;
-}
+//void ConnectionSlot::resetJoinGameInProgressFlags() {
+//	this->gotIntro 				= false;
+//	this->skipLagCheck 			= false;
+//	this->joinGameInProgress 	= false;
+//	this->ready					= false;
+//}
 
 void ConnectionSlot::setJoinGameInProgressFlags() {
 	this->gotIntro 				= true;
@@ -1574,12 +1574,12 @@ vector<NetworkCommand> ConnectionSlot::getPendingNetworkCommandList(bool clearLi
     return ret;
 }
 
-void ConnectionSlot::clearPendingNetworkCommandList() {
-	MutexSafeWrapper safeMutexSlot(mutexPendingNetworkCommandList,CODE_AT_LINE);
-	if(vctPendingNetworkCommandList.empty() == false) {
-		vctPendingNetworkCommandList.clear();
-	}
-}
+//void ConnectionSlot::clearPendingNetworkCommandList() {
+//	MutexSafeWrapper safeMutexSlot(mutexPendingNetworkCommandList,CODE_AT_LINE);
+//	if(vctPendingNetworkCommandList.empty() == false) {
+//		vctPendingNetworkCommandList.clear();
+//	}
+//}
 
 bool ConnectionSlot::hasValidSocketId() {
     bool result = false;

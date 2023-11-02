@@ -35,7 +35,7 @@ using Util::intToStr;
 bool getVBOSupported();
 void setVBOSupported(bool value);
 
-void overrideGlExtensionSupport(const char *extensionName,bool value);
+//void overrideGlExtensionSupport(const char *extensionName,bool value);
 bool isGlExtensionSupported(const char *extensionName);
 //bool isGlVersionSupported(int major, int minor, int release);
 const char *getGlVersion();
@@ -48,7 +48,7 @@ int getGlMaxTextureSize();
 int getGlMaxTextureUnits();
 int getGlModelviewMatrixStackDepth();
 int getGlProjectionMatrixStackDepth();
-void checkGlExtension(const char *extensionName);
+//void checkGlExtension(const char *extensionName);
 
 void inline _assertGl(const char *file, int line, GLenum *forceErrorNumber = NULL) {
 	GLenum error = (forceErrorNumber != NULL ? *forceErrorNumber : glGetError());

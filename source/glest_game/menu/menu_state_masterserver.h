@@ -117,6 +117,7 @@ public:
 	~MenuStateMasterserver();
 
 	void mouseClick(int x, int y, MouseButton mouseButton);
+	void mouseDoubleClick(int x, int y, MouseButton mouseButton){};
 	void mouseUp(int x, int y, const MouseButton mouseButton);
 	void mouseMove(int x, int y, const MouseState *mouseState);
 	void update();
@@ -135,7 +136,7 @@ public:
 private:
 	void showMessageBox(const string &text, const string &header, bool toggle);
 	bool connectToServer(string ipString, int port);
-	void setConsolePos(int yPos);
+	//void setConsolePos(int yPos);
 	void setButtonLinePosition(int pos);
 	void clearServerLines();
 	void clearUserButtons();

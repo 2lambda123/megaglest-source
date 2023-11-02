@@ -217,10 +217,24 @@ void MainMenu::mouseMove(int x, int y, const MouseState *ms){
 	state->mouseMove(x, y, ms);
 }
 
+void MainMenu::eventMouseWheel(int x, int y,int zDelta){
+	state->eventMouseWheel(x, y, zDelta);
+}
+
 //returns if exiting
 void MainMenu::mouseDownLeft(int x, int y){
 	if(GraphicComponent::getFade()<0.2f) return;
 	state->mouseClick(x, y, mbLeft);
+}
+
+void MainMenu::mouseDoubleClickLeft(int x, int y){
+	if(GraphicComponent::getFade()<0.2f) return;
+	state->mouseDoubleClick(x, y, mbLeft);
+}
+
+void MainMenu::mouseDoubleClickRight(int x, int y){
+	if(GraphicComponent::getFade()<0.2f) return;
+	state->mouseDoubleClick(x, y, mbRight);
 }
 
 void MainMenu::mouseDownRight(int x, int y){

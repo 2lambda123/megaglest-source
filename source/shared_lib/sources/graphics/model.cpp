@@ -818,15 +818,24 @@ void Mesh::load(int meshIndex, const string &dir, FILE *f, TextureManager *textu
 			char mapPathString[mapPathSize+1]="";
 			memset(&mapPathString[0],0,mapPathSize+1);
 			memcpy(&mapPathString[0],reinterpret_cast<char*>(cMapPath),mapPathSize);
-			string mapPath= toLower(mapPathString);
-
-			if(SystemFlags::VERBOSE_MODE_ENABLED) printf("mapPath [%s] meshHeader.textures = %d flag = %d (meshHeader.textures & flag) = %d meshIndex = %d i = %d\n",mapPath.c_str(),meshHeader.textures,flag,(meshHeader.textures & flag),meshIndex,i);
 
 			string mapFullPath= dir;
 			if(mapFullPath != "") {
 				endPathWithSlash(mapFullPath);
 			}
+
+			string mapPath= mapPathString;
+			// if the file does not exists we try it with filename to lower case.
+			// its a workaround for broken mods made by windows users ( filenames  are  not case sensitive in windows  )
+			// This allows us to fix mods with bad cases by renaming all texture filesnames to lower case. By this mods work in linux too.
+			if(fileExists(mapFullPath+mapPath) == false) {
+				mapPath= toLower(mapPathString);
+			}
+
+			if(SystemFlags::VERBOSE_MODE_ENABLED) printf("mapPath [%s] meshHeader.textures = %d flag = %d (meshHeader.textures & flag) = %d meshIndex = %d i = %d\n",mapPath.c_str(),meshHeader.textures,flag,(meshHeader.textures & flag),meshIndex,i);
+
 			mapFullPath += mapPath;
+
 			if(textureManager) {
 				textures[i] = loadMeshTexture(meshIndex, i, textureManager, mapFullPath,
 						meshTextureChannelCount[i],texturesOwned[i],
@@ -1167,23 +1176,24 @@ void Model::load(const string &path, bool deletePixMapAfterLoad,
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
 		return;
 	}
-	string extension= path.substr(path.find_last_of('.') + 1);
-	if(extension=="g3d" || extension=="G3D") {
+	size_t pos = path.find_last_of('.');
+	string extension = toLower(path.empty() == false ? path.substr(pos + 1) : "");
+	if(extension == "g3d") {
 		loadG3d(path,deletePixMapAfterLoad,loadedFileList, this->sourceLoader);
 	}
 	else {
-		throw megaglest_runtime_error("Unknown model format: " + extension);
+		throw megaglest_runtime_error("#1 Unknown model format [" + extension + "] file [" + path + "]");
 	}
 }
 
 void Model::save(const string &path, string convertTextureToFormat,
 		bool keepsmallest) {
-	string extension= path.substr(path.find_last_of('.')+1);
-	if(extension=="g3d" ||extension=="G3D") {
+	string extension = (path.empty() == false ? path.substr(path.find_last_of('.')+1) : "");
+	if(toLower(extension) == "g3d") {
 		saveG3d(path,convertTextureToFormat,keepsmallest);
 	}
 	else {
-		throw megaglest_runtime_error("Unknown model format: " + extension);
+		throw megaglest_runtime_error("#2 Unknown model format [" + extension + "] file [" + path + "]");
 	}
 }
 
@@ -2089,14 +2099,9 @@ void BaseColorPickEntity::recycleUniqueColor() {
 
 	if(usedColorIDList.empty() == false) {
 		string color_key = getColorDescription();
-		if(usedColorIDList.find(color_key) != usedColorIDList.end()) {
-			usedColorIDList.erase(color_key);
-
-			//printf("REMOVING used Color [%s] usedColorIDList = %d nextColorIDReuseList = %d!\n",color_key.c_str(),(int)usedColorIDList.size(),(int)nextColorIDReuseList.size());
-		}
-		else {
-			printf("Line ref: %d *WARNING* color [%s] used count: %d NOT FOUND in history list!\n",__LINE__,color_key.c_str(),(int)usedColorIDList.size());
-		}
+		usedColorIDList.erase(color_key);
+		//printf("REMOVING used Color [%s] usedColorIDList = %d nextColorIDReuseList = %d!\n",color_key.c_str(),(int)usedColorIDList.size(),(int)nextColorIDReuseList.size());
+		//printf("Line ref: %d *WARNING* color [%s] used count: %d NOT FOUND in history list!\n",__LINE__,color_key.c_str(),(int)usedColorIDList.size());
 	}
 }
 

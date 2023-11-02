@@ -19,7 +19,6 @@
 #include <vector>
 #include <string>
 
-using Shared::Platform::int8;
 using Shared::Platform::int32;
 using Shared::Platform::float32;
 using Shared::Util::RandomGen;
@@ -77,16 +76,16 @@ struct MapFileHeader {
 	int32 height;
 	int32 heightFactor;
 	int32 waterLevel;
-	int8 title[MAX_TITLE_LENGTH];
-	int8 author[MAX_AUTHOR_LENGTH];
+	char title[MAX_TITLE_LENGTH];
+	char author[MAX_AUTHOR_LENGTH];
 	union {
-		int8 description[MAX_DESCRIPTION_LENGTH];
+		char description[MAX_DESCRIPTION_LENGTH];
 		struct {
-			int8 short_desc[MAX_DESCRIPTION_LENGTH_VERSION2];
+			char short_desc[MAX_DESCRIPTION_LENGTH_VERSION2];
 			int32 magic; // 0x01020304 for meta
 			int32 cliffLevel;
 			int32 cameraHeight;
-			int8 meta[116];
+			char meta[116];
 		} version2;
 	};
 };
@@ -174,6 +173,7 @@ public:
 	int getCameraHeight() const{return cameraHeight;}
 
 	bool inside(int x, int y);
+    static int get_dist(int delta_x, int delta_y);
 
 	void setRefAlt(int x, int y);
 	void setAdvanced(int heightFactor, int waterLevel, int cliffLevel, int cameraHeight);
@@ -191,8 +191,8 @@ public:
 	void glestChangeHeight(int x, int y, int height, int radius);
 	void pirateChangeHeight(int x, int y, int height, int radius);
 	void changeSurface(int x, int y, MapSurfaceType surface, int radius);
-	void changeObject(int x, int y, int object, int radius);
-	void changeResource(int x, int y, int resource, int radius);
+    void changeObject(int x, int y, int object, int radius, bool overwrite);
+    void changeResource(int x, int y, int resource, int radius, bool overwrite);
 	void changeStartLocation(int x, int y, int player);
 
 	void setHeight(int x, int y, float height);
@@ -205,9 +205,10 @@ public:
 	void copyXY(int x, int y, int sx, int sy);  // destination x,y = source sx,sy
 	void swapXY(int x, int y, int sx, int sy);
 	void reset(int w, int h, float alt, MapSurfaceType surf);
-	void resize(int w, int h, float alt, MapSurfaceType surf);
+    void resize(int w, int h);
 	void resetFactions(int maxFactions);
 	void randomizeHeights(bool withReset,int minimumHeight, int maximumHeight, int chanceDevider, int smoothRecursions);
+    void importMapHeights(unsigned char* data);
 	void randomizeFactions();
 	void smoothSurface(bool limitHeights);
 	void switchSurfaces(MapSurfaceType surf1, MapSurfaceType surf2);

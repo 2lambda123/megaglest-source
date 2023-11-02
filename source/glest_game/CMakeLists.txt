@@ -29,7 +29,10 @@ IF(BUILD_MEGAGLEST)
 		link_directories(${PROJECT_SOURCE_DIR}/source/win32_deps/xerces-c-src_2_8_0/lib)
 	ENDIF()
 
-	FIND_PACKAGE(${SDL_VERSION_NAME} REQUIRED)
+	if(NOT VCPKG_TARGET_TRIPLET)
+		FIND_PACKAGE(${SDL_VERSION_NAME} REQUIRED)
+	ENDIF()
+
 	INCLUDE_DIRECTORIES(${${SDL_VERSION_NAME}_INCLUDE_DIR})
 	IF(UNIX)
 		SET(EXTERNAL_LIBS ${EXTERNAL_LIBS} ${${SDL_VERSION_NAME}_LIBRARY})
@@ -49,13 +52,23 @@ IF(BUILD_MEGAGLEST)
 	        ENDIF()
         ENDIF()
 
-	FIND_PACKAGE(OpenAL REQUIRED)
+	IF(VCPKG_TARGET_TRIPLET)
+		FIND_PACKAGE(OpenAL CONFIG REQUIRED)
+	ELSE()
+		FIND_PACKAGE(OpenAL REQUIRED)
+	ENDIF()
+
 	INCLUDE_DIRECTORIES(${OPENAL_INCLUDE_DIR})
 	IF(UNIX)
 		SET(EXTERNAL_LIBS ${EXTERNAL_LIBS} ${OPENAL_LIBRARY})
 	ENDIF()
 
-	FIND_PACKAGE(OGG REQUIRED)
+	IF(VCPKG_TARGET_TRIPLET)
+		FIND_PACKAGE(Ogg CONFIG REQUIRED)
+	ELSE()
+		FIND_PACKAGE(OGG REQUIRED)
+	ENDIF()
+
 	INCLUDE_DIRECTORIES(${OGG_INCLUDE_DIR})
 	IF(UNIX)
 		SET(EXTERNAL_LIBS ${EXTERNAL_LIBS} ${VORBIS_FILE_LIBRARY})
@@ -139,7 +152,10 @@ IF(BUILD_MEGAGLEST)
 		ENDIF()
 	ENDIF()
 
-    find_package(PkgConfig REQUIRED)
+
+	IF(NOT MSVC)
+    	find_package(PkgConfig REQUIRED)
+	ENDIF()
     IF(FORCE_STREFLOP_SOFTWRAPPER)
         pkg_search_module(STREFLOP streflop-soft)
     ELSE()
@@ -186,14 +202,16 @@ IF(BUILD_MEGAGLEST)
 		menu
 		network
 		sound
+        steam
+        steamshim
 		type_instances
 		types
 		world)
 
 	SET(GLEST_LIB_INCLUDE_ROOT "../shared_lib/include/")
 	SET(GLEST_LIB_INCLUDE_DIRS
-                ${GLEST_LIB_INCLUDE_ROOT}compression
-	        ${GLEST_LIB_INCLUDE_ROOT}platform/common
+        ${GLEST_LIB_INCLUDE_ROOT}compression
+	    ${GLEST_LIB_INCLUDE_ROOT}platform/common
 		${GLEST_LIB_INCLUDE_ROOT}platform/posix
 		${GLEST_LIB_INCLUDE_ROOT}util
 		${GLEST_LIB_INCLUDE_ROOT}graphics
@@ -202,7 +220,7 @@ IF(BUILD_MEGAGLEST)
 		${GLEST_LIB_INCLUDE_ROOT}sound
 		${GLEST_LIB_INCLUDE_ROOT}sound/openal
 		${GLEST_LIB_INCLUDE_ROOT}xml
-                ${GLEST_LIB_INCLUDE_ROOT}xml/rapidxml
+        ${GLEST_LIB_INCLUDE_ROOT}xml/rapidxml
 		${GLEST_LIB_INCLUDE_ROOT}glew
 		${GLEST_LIB_INCLUDE_ROOT}lua
 		${GLEST_LIB_INCLUDE_ROOT}map)
@@ -259,7 +277,7 @@ IF(BUILD_MEGAGLEST)
 		add_custom_target(run ALL DEPENDS mg.tmp)
 	ENDIF()
 
-	IF(WIN32)
+	IF(WIN32 AND NOT MSVC)
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-subsystem,console -mconsole")
 	ENDIF()
 
@@ -267,7 +285,7 @@ IF(BUILD_MEGAGLEST)
 		SET(EXECUTABLE_OUTPUT_PATH "${MEGAGLEST_FRIENDLY_OUTPUT_PATH}")
 	ENDIF()
 
-        MESSAGE(STATUS "***Note: The final output path for the MegaGlest engine will be [${EXECUTABLE_OUTPUT_PATH}]")
+    MESSAGE(STATUS "***Note: The final output path for the MegaGlest engine will be [${EXECUTABLE_OUTPUT_PATH}]")
 
 	SET_SOURCE_FILES_PROPERTIES(${MG_INCLUDE_FILES} PROPERTIES HEADER_FILE_ONLY 1)
 
@@ -292,8 +310,32 @@ IF(BUILD_MEGAGLEST)
 	endif()
 
 	IF(WIN32)
-		TARGET_LINK_LIBRARIES(${TARGET_NAME} stdc++ gcc odbc32 wsock32 winspool winmm shell32 comctl32 ctl3d32  advapi32 wsock32 opengl32 glu32 ole32 oleaut32 uuid mingw32 ddraw dsound dxguid ws2_32 iphlpapi wsock32 libogg libvorbis libvorbisfile zlib jpeg libpng xerces-c2_8_0 OpenAL32 libcurl winmm gdi32 opengl32 glu32 ${SDL_VERSION_NAME} ${SDL_VERSION_NAME}main lua5.1 ${MG_STREFLOP} libmegaglest stdc++ moldname mingwex msvcrt user32 kernel32)
+		TARGET_SOURCES(${TARGET_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/mk/windoze/glest.rc)
+		IF(VCPKG_TARGET_TRIPLET)
+			find_package(Vorbis CONFIG REQUIRED)
+			find_package(SDL2 CONFIG REQUIRED)
+			TARGET_LINK_LIBRARIES(${TARGET_NAME}
+				${JPEG_LIBRARIES}
+				${LUA_LIBRARIES}
+				${MG_STREFLOP}
+				CURL::libcurl
+				GLEW::GLEW
+				# SDL2 must come before libmegaglest, or you get a upnpc binary instead :)
+				$<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+				$<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+				libmegaglest
+				Ogg::ogg
+				OpenAL::OpenAL
+				PNG::PNG
+				Vorbis::vorbis
+				Vorbis::vorbisenc
+				Vorbis::vorbisfile
+				ZLIB::ZLIB)
+		ELSE()
+			TARGET_LINK_LIBRARIES(${TARGET_NAME} stdc++ gcc odbc32 wsock32 winspool winmm shell32 comctl32 ctl3d32 advapi32 wsock32 opengl32 glu32 ole32 oleaut32 uuid mingw32 ddraw dsound dxguid ws2_32 iphlpapi wsock32 libogg libvorbis libvorbisfile zlib jpeg libpng xerces-c2_8_0 OpenAL32 libcurl winmm gdi32 opengl32 glu32 ${SDL_VERSION_NAME} ${SDL_VERSION_NAME}main lua5.1 ${MG_STREFLOP} libmegaglest stdc++ moldname mingwex msvcrt user32 kernel32)
+		ENDIF()
 	ENDIF()
+
 	IF(NOT WIN32)
 		IF(WANT_USE_STREFLOP AND NOT STREFLOP_FOUND)
 			TARGET_LINK_LIBRARIES(${TARGET_NAME} ${MG_STREFLOP})
@@ -302,51 +344,50 @@ IF(BUILD_MEGAGLEST)
 	ENDIF()
 	TARGET_LINK_LIBRARIES(${TARGET_NAME} ${EXTERNAL_LIBS})
 
-        SET(HELP2MAN_OUT_PATH ${EXECUTABLE_OUTPUT_PATH})
-        IF("${EXECUTABLE_OUTPUT_PATH}" STREQUAL "")
-                SET(HELP2MAN_OUT_PATH "${CMAKE_CURRENT_BINARY_DIR}/")
-        ENDIF()
+    SET(HELP2MAN_OUT_PATH ${EXECUTABLE_OUTPUT_PATH})
+    IF("${EXECUTABLE_OUTPUT_PATH}" STREQUAL "")
+        SET(HELP2MAN_OUT_PATH "${CMAKE_CURRENT_BINARY_DIR}/")
+    ENDIF()
 
 	IF(EXISTS ${HELP2MAN})
 		MESSAGE(STATUS "***-- Found help2man: ${HELP2MAN} about to build manpage in [${HELP2MAN_OUT_PATH}${TARGET_NAME_MANPAGE}]")
-
-                SET(MG_MANPAGE_DESCRIPTION "3D multi-player real time strategy game")
+        SET(MG_MANPAGE_DESCRIPTION "3D multi-player real time strategy game")
 
 		IF(EXISTS ${XVFB_EXEC})
 			MESSAGE(STATUS "***-- Found xvfb-run: ${XVFB_EXEC} about to build manpage with it.")
 
-		  	add_custom_target(${TARGET_NAME_MANPAGE} ALL
-		    		COMMAND ${XVFB_EXEC} --auto-servernum --server-num=770 ${HELP2MAN} --name='${MG_MANPAGE_DESCRIPTION}' --section=6 -N -o ${HELP2MAN_OUT_PATH}${TARGET_NAME_MANPAGE} ${HELP2MAN_OUT_PATH}${TARGET_NAME}
-		    	DEPENDS ${TARGET_NAME})
+			add_custom_target(${TARGET_NAME_MANPAGE} ALL
+				COMMAND ${XVFB_EXEC} --auto-servernum --server-num=770 ${HELP2MAN} --name="${MG_MANPAGE_DESCRIPTION}" --section=6 -N -o ${HELP2MAN_OUT_PATH}${TARGET_NAME_MANPAGE} ${HELP2MAN_OUT_PATH}${TARGET_NAME}
+			DEPENDS ${TARGET_NAME})
 		ELSE()
-		  	add_custom_target(${TARGET_NAME_MANPAGE} ALL
-		    		COMMAND ${HELP2MAN} --name='${MG_MANPAGE_DESCRIPTION}' --section=6 -N -o ${HELP2MAN_OUT_PATH}${TARGET_NAME_MANPAGE} ${HELP2MAN_OUT_PATH}${TARGET_NAME}
-		    	DEPENDS ${TARGET_NAME})
+			add_custom_target(${TARGET_NAME_MANPAGE} ALL
+				COMMAND ${HELP2MAN} --name="${MG_MANPAGE_DESCRIPTION}" --section=6 -N -o ${HELP2MAN_OUT_PATH}${TARGET_NAME_MANPAGE} ${HELP2MAN_OUT_PATH}${TARGET_NAME}
+			DEPENDS ${TARGET_NAME})
 		ENDIF()
 	ENDIF()
 
-        # Requires an install prefix for the items below to work
-        IF(NOT CMAKE_INSTALL_PREFIX STREQUAL "")
-	        MESSAGE(STATUS "**Source package INSTALL TRIGGERED [${PROJECT_SOURCE_DIR}]")	
+    # Requires an install prefix for the items below to work
+    IF(NOT CMAKE_INSTALL_PREFIX STREQUAL "")
+        MESSAGE(STATUS "**Source package INSTALL TRIGGERED [${PROJECT_SOURCE_DIR}]")	
 
-	        # Installation of the program
-	        INSTALL(TARGETS 
-		        ${TARGET_NAME} 
-		        DESTINATION ${MEGAGLEST_BIN_INSTALL_PATH})
+        # Installation of the program
+        INSTALL(TARGETS 
+	        ${TARGET_NAME} 
+	        DESTINATION ${MEGAGLEST_BIN_INSTALL_PATH})
 
-	        IF(EXISTS ${HELP2MAN} AND NOT "${MEGAGLEST_MANPAGE_INSTALL_PATH}" STREQUAL "")
-         		MESSAGE(STATUS "**NOTE: Will Install manpage [${TARGET_NAME_MANPAGE}] to [${MEGAGLEST_MANPAGE_INSTALL_PATH}]")	
+        IF(EXISTS ${HELP2MAN} AND NOT "${MEGAGLEST_MANPAGE_INSTALL_PATH}" STREQUAL "")
+     		MESSAGE(STATUS "**NOTE: Will Install manpage [${TARGET_NAME_MANPAGE}] to [${MEGAGLEST_MANPAGE_INSTALL_PATH}]")	
 
-		        # Installation of the program manpage file
-		        INSTALL(FILES 
-		          "${HELP2MAN_OUT_PATH}${TARGET_NAME_MANPAGE}"
-		          DESTINATION ${MEGAGLEST_MANPAGE_INSTALL_PATH})
-	        ENDIF()
+	        # Installation of the program manpage file
+	        INSTALL(FILES 
+	          "${HELP2MAN_OUT_PATH}${TARGET_NAME_MANPAGE}"
+	          DESTINATION ${MEGAGLEST_MANPAGE_INSTALL_PATH})
+        ENDIF()
 
 		IF(UNIX)
-			INSTALL(FILES
+			INSTALL(PROGRAMS
 				"${PROJECT_SOURCE_DIR}/mk/linux/start_megaglest_gameserver"
-				DESTINATION ${MEGAGLEST_DATA_INSTALL_PATH})
+				DESTINATION ${MEGAGLEST_INI_INSTALL_PATH})
 		ENDIF()
 		INSTALL(FILES
 			"${PROJECT_SOURCE_DIR}/mk/shared/glestkeys.ini"
@@ -355,15 +396,15 @@ IF(BUILD_MEGAGLEST)
 		IF(WIN32)
 			INSTALL(FILES
 				"${PROJECT_SOURCE_DIR}/mk/windoze/glest.ini"
-				DESTINATION ${MEGAGLEST_DATA_INSTALL_PATH})
+				DESTINATION ${MEGAGLEST_INI_INSTALL_PATH})
 		ELSEIF(UNIX AND NOT APPLE)
 			INSTALL(FILES
 				"${PROJECT_SOURCE_DIR}/mk/linux/glest.ini"
-				DESTINATION ${MEGAGLEST_DATA_INSTALL_PATH})
+				DESTINATION ${MEGAGLEST_INI_INSTALL_PATH})
 		ELSEIF(UNIX AND APPLE)
 			INSTALL(FILES
 				"${PROJECT_SOURCE_DIR}/mk/macos/glest.ini"
-				DESTINATION ${MEGAGLEST_DATA_INSTALL_PATH})
+				DESTINATION ${MEGAGLEST_INI_INSTALL_PATH})
 			IF(WANT_SINGLE_INSTALL_DIRECTORY AND EXISTS "${PROJECT_SOURCE_DIR}/mk/macos/p7zip/")
 				INSTALL(DIRECTORY
 					"${PROJECT_SOURCE_DIR}/mk/macos/p7zip"
@@ -378,7 +419,7 @@ IF(BUILD_MEGAGLEST)
 
 		INSTALL(FILES
 			"${PROJECT_SOURCE_DIR}/mk/shared/megaglest.ico"
-			DESTINATION ${MEGAGLEST_DATA_INSTALL_PATH})
+			DESTINATION ${MEGAGLEST_INI_INSTALL_PATH})
 		IF(UNIX AND APPLE AND NOT WANT_SINGLE_INSTALL_DIRECTORY)
 			INSTALL(FILES
 				"${PROJECT_SOURCE_DIR}/mk/macos/bundle_resources/MegaGlest.icns"

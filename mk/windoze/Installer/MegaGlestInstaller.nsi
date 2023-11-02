@@ -3,8 +3,8 @@
 
 !define APNAME MegaGlest
 !define APNAME_OLD Mega-Glest
-!define APVER_OLD 3.12.0
-!define APVER 3.13.0
+!define APVER_OLD 3.13.0
+!define APVER 3.13-dev
 
 !ifdef NSIS_WIN32_MAKENSIS
 !define NSISCONF_3 ";" ; NSIS 2 tries to parse some preprocessor instructions inside "!if 0" blocks!
@@ -195,7 +195,7 @@ FunctionEnd
 Function .onInstSuccess
 
     MessageBox MB_YESNO "Would you like to view our getting started page on megaglest.org?" IDNO noLaunchWebsite
-    ExecShell open 'http://megaglest.org/get-started.html'
+    ExecShell open 'https://megaglest.org/get_started'
     
 noLaunchWebsite:
 

@@ -195,20 +195,20 @@ Checksum UnitPathBasic::getCRC() {
 // 	class UnitPath
 // =====================================================
 
-void WaypointPath::condense() {
-	if (size() < 2) {
-		return;
-	}
-	iterator prev, curr;
-	prev = curr = begin();
-	while (++curr != end()) {
-		if (prev->dist(*curr) < 3.f) {
-			prev = erase(prev);
-		} else {
-			++prev;
-		}
-	}
-}
+//void WaypointPath::condense() {
+//	if (size() < 2) {
+//		return;
+//	}
+//	iterator prev, curr;
+//	prev = curr = begin();
+//	while (++curr != end()) {
+//		if (prev->dist(*curr) < 3.f) {
+//			prev = erase(prev);
+//		} else {
+//			++prev;
+//		}
+//	}
+//}
 
 std::string UnitPath::toString() const {
 	std::string result = "unit path blockCount = " + intToStr(blockCount) + " pathQueue size = " + intToStr(size());
@@ -535,7 +535,7 @@ Unit::Unit(int id, UnitPathInterface *unitpath, const Vec2i &pos,
 	changedActiveCommandFrame = 0;
 
 	lastSynchDataString="";
-	modelFacing = CardinalDir::NORTH;
+	modelFacing = CardinalDir(CardinalDir::NORTH);
 	lastStuckFrame = 0;
 	lastStuckPos = Vec2i(0,0);
 	lastPathfindFailedFrame = 0;
@@ -866,17 +866,17 @@ void Unit::setModelFacing(CardinalDir value) {
 	lastRotation = targetRotation = rotation = value * 90.f;
 }
 
-void Unit::setCurrField(Field currField) {
-	Field original_field = this->currField;
-
-	this->currField = currField;
-
-	if(original_field != this->currField) {
-		//printf("File: %s line: %d\n",extractFileFromDirectoryPath(__FILE__).c_str(),__LINE__);
-		game->getScriptManager()->onUnitTriggerEvent(this,utet_FieldChanged);
-		//printf("File: %s line: %d\n",extractFileFromDirectoryPath(__FILE__).c_str(),__LINE__);
-	}
-}
+//void Unit::setCurrField(Field currField) {
+//	Field original_field = this->currField;
+//
+//	this->currField = currField;
+//
+//	if(original_field != this->currField) {
+//		//printf("File: %s line: %d\n",extractFileFromDirectoryPath(__FILE__).c_str(),__LINE__);
+//		game->getScriptManager()->onUnitTriggerEvent(this,utet_FieldChanged);
+//		//printf("File: %s line: %d\n",extractFileFromDirectoryPath(__FILE__).c_str(),__LINE__);
+//	}
+//}
 // ====================================== get ======================================
 
 Vec2i Unit::getCenteredPos() const {
@@ -1595,23 +1595,23 @@ Model *Unit::getCurrentModelPtr() {
 	return result;
 }
 
-const Model *Unit::getCurrentModel() {
-	if(currSkill == NULL) {
-		char szBuf[8096]="";
-		snprintf(szBuf,8096,"In [%s::%s Line: %d] ERROR: currSkill == NULL, Unit = [%s]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__,this->toString().c_str());
-		throw megaglest_runtime_error(szBuf);
-	}
-
-	int currentModelIndexForCurrSkillType = lastModelIndexForCurrSkillType;
-	const Model *result = currSkill->getAnimation(getAnimProgressAsFloat(),this,&lastModelIndexForCurrSkillType, &animationRandomCycleCount);
-	if(currentModelIndexForCurrSkillType != lastModelIndexForCurrSkillType) {
-		animationRandomCycleCount++;
-		if(currSkill != NULL && animationRandomCycleCount >= currSkill->getAnimationCount()) {
-			animationRandomCycleCount = 0;
-		}
-	}
-	return result;
-}
+//const Model *Unit::getCurrentModel() {
+//	if(currSkill == NULL) {
+//		char szBuf[8096]="";
+//		snprintf(szBuf,8096,"In [%s::%s Line: %d] ERROR: currSkill == NULL, Unit = [%s]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__,this->toString().c_str());
+//		throw megaglest_runtime_error(szBuf);
+//	}
+//
+//	int currentModelIndexForCurrSkillType = lastModelIndexForCurrSkillType;
+//	const Model *result = currSkill->getAnimation(getAnimProgressAsFloat(),this,&lastModelIndexForCurrSkillType, &animationRandomCycleCount);
+//	if(currentModelIndexForCurrSkillType != lastModelIndexForCurrSkillType) {
+//		animationRandomCycleCount++;
+//		if(currSkill != NULL && animationRandomCycleCount >= currSkill->getAnimationCount()) {
+//			animationRandomCycleCount = 0;
+//		}
+//	}
+//	return result;
+//}
 
 bool Unit::checkModelStateInfoForNewHpValue() {
 	bool result = false;
@@ -1784,8 +1784,10 @@ unsigned int Unit::getCommandSize() const {
 	return (unsigned int)commands.size();
 }
 
-//return current command, assert that there is always one command
-int Unit::getCountOfProducedUnits(const UnitType *ut) const{
+/*
+ * (this is meant for MaxUnitCount)
+ */
+int Unit::getCountOfProducedUnitsPreExistence(const UnitType *ut) const{
 	int count=0;
 	for(Commands::const_iterator it= commands.begin(); it!=commands.end(); ++it){
 			const CommandType* ct=(*it)->getCommandType();
@@ -1798,7 +1800,9 @@ int Unit::getCountOfProducedUnits(const UnitType *ut) const{
         	}
         	if(ct->getClass()==ccBuild){
         		const UnitType *builtUnitType= (*it)->getUnitType();
-        		if(builtUnitType==ut)
+        		// we dont count builded units if they are already exist. So we just count the units that will be build.
+        		// otherwise we will get double counts of alive units and units beeing build.
+        		if(builtUnitType==ut && (*it)->getUnit()==NULL)
         		{
         			count++;
         		}
@@ -2163,9 +2167,9 @@ void Unit::addObserver(UnitObserver *unitObserver){
 	observers.push_back(unitObserver);
 }
 
-void Unit::removeObserver(UnitObserver *unitObserver){
-	observers.remove(unitObserver);
-}
+//void Unit::removeObserver(UnitObserver *unitObserver){
+//	observers.remove(unitObserver);
+//}
 
 void Unit::notifyObservers(UnitObserver::Event event){
 	for(Observers::iterator it= observers.begin(); it!=observers.end(); ++it){
@@ -3574,7 +3578,7 @@ void Unit::applyUpgrade(const UpgradeType *upgradeType){
 
 		checkItemInVault(&this->hp,this->hp);
 		int original_hp = this->hp;
-		this->hp += upgradeType->getMaxHp();
+		this->hp += totalUpgrade.getMaxHp();
 		this->hp = max(0,this->hp);
 		if(original_hp != this->hp) {
 			//printf("File: %s line: %d\n",extractFileFromDirectoryPath(__FILE__).c_str(),__LINE__);
@@ -3769,6 +3773,10 @@ float Unit::computeHeight(const Vec2i &pos) const {
 				}
 			}
 		}
+		// for flying above water  we use the water height + airHeight  if it is higher than the normal height..
+		if( map->getWaterLevel()+airHeight>height)	{
+				height=map->getWaterLevel()+airHeight;
+			}
 	}
 
 	return height;
@@ -4568,13 +4576,13 @@ void Unit::addBadHarvestPos(const Vec2i &value) {
 	cleanupOldBadHarvestPos();
 }
 
-void Unit::removeBadHarvestPos(const Vec2i &value) {
-	std::map<Vec2i,int>::iterator iter = badHarvestPosList.find(value);
-	if(iter != badHarvestPosList.end()) {
-		badHarvestPosList.erase(value);
-	}
-	cleanupOldBadHarvestPos();
-}
+//void Unit::removeBadHarvestPos(const Vec2i &value) {
+//	std::map<Vec2i,int>::iterator iter = badHarvestPosList.find(value);
+//	if(iter != badHarvestPosList.end()) {
+//		badHarvestPosList.erase(value);
+//	}
+//	cleanupOldBadHarvestPos();
+//}
 
 void Unit::cleanupOldBadHarvestPos() {
 	const unsigned int cleanupInterval = (GameConstants::updateFps * 5);
@@ -5334,7 +5342,9 @@ Unit * Unit::loadGame(const XmlNode *rootNode, GameSettings *settings, Faction *
 		string skillTypeName = unitNode->getAttribute("currSkillName")->getValue();
 		SkillClass skillClass = static_cast<SkillClass>(unitNode->getAttribute("currSkillClass")->getIntValue());
 		result->currSkill = ut->getSkillType(skillTypeName,skillClass);
+        int tempProgress2 = result->progress2; // setCurrSkill overwrites progress2
 		result->setCurrSkill(result->currSkill);
+        result->progress2  = tempProgress2; // restore  it
 	}
 
 //    int lastModelIndexForCurrSkillType;

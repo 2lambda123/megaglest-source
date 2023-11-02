@@ -32,7 +32,7 @@ const char *mailString				= " http://bugs.megaglest.org";
 // !! Use minor versions !!  Only major and minor version control compatibility!
 // typical version numbers look like this: v3.13-beta1.0   v3.12-dev   v3.12.1
 // don't forget to update file: source/version.txt
-const string glestVersionString 	= "v3.13.0";
+const string glestVersionString 	= "v3.13-dev";
 const string lastCompatibleSaveGameVersionString 	= "v3.11.1";
 
 #if defined(GITVERSIONHEADER)
@@ -41,7 +41,7 @@ const string lastCompatibleSaveGameVersionString 	= "v3.11.1";
 #if defined(GITVERSION) || defined(GITVERSIONHEADER)
 	const string GIT_RawRev		= string(GITVERSION);
 #else
-	const string GIT_RawRev		= "$5604.3a5d459$";
+	const string GIT_RawRev		= "$5608.a3c8464$";
 #endif
 const string GIT_Rev 			= string("Rev: ") + string(GIT_RawRev);
 
@@ -212,16 +212,16 @@ string getAboutString1(int i) {
 	case 0: return "MegaGlest " + glestVersionString + " (" + "Shared Library " + sharedLibVersionString + ")";
 	case 1: return GIT_Rev;
 	case 2: return "Copyright 2001-2010 The Glest Team";
-	case 3: return "Copyright 2010-2017 The MegaGlest Team";
+	case 3: return "Copyright 2010-2021 The MegaGlest Team";
 	}
 	return "";
 }
 
 string getAboutString2(int i) {
 	switch(i) {
-	case 0: return "Web: http://megaglest.org";
+	case 0: return "Web: https://megaglest.org";
 	case 1: return "Bug reports: " + string(mailString);
-	case 2: return "IRC: irc://irc.freenode.net/megaglest";
+	case 2: return "IRC: irc://irc.libera.chat/megaglest";
 	}
 	return "";
 }
@@ -330,7 +330,7 @@ string getGameCustomCoreDataPath(string originalBasePath, string uniqueFilePath)
     return result;
 }
 
-string getGameReadWritePath(string lookupKey) {
+string getGameReadWritePath(const string &lookupKey) {
 	string path = "";
 
 	if(lookupKey != "") {

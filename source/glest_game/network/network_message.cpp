@@ -1725,7 +1725,7 @@ const char * NetworkMessageCommandList::getPackedMessageFormatDetail() const {
 
 unsigned int NetworkMessageCommandList::getPackedSizeDetail(int count) {
 	unsigned int result = 0;
-	if(result == 0) {
+	//if(result == 0) {
 		for(unsigned int i = 0; i < (unsigned int)count; ++i) {
 			NetworkCommand packedData;
 			unsigned char *buf = new unsigned char[sizeof(NetworkCommand)*3];
@@ -1746,7 +1746,7 @@ unsigned int NetworkMessageCommandList::getPackedSizeDetail(int count) {
 					packedData.unitCommandGroupId);
 			delete [] buf;
 		}
-	}
+	//}
 	return result;
 }
 void NetworkMessageCommandList::unpackMessageDetail(unsigned char *buf,int count) {
@@ -2349,6 +2349,7 @@ unsigned int NetworkMessageSynchNetworkGameData::getPackedSizeHeader() {
 	static unsigned int result = 0;
 	if(result == 0) {
 		Data packedData;
+		packedData.messageType=0;
 		unsigned char *buf = new unsigned char[sizeof(packedData)*3];
 		result = pack(buf, getPackedMessageFormatHeader(),
 				packedData.messageType,

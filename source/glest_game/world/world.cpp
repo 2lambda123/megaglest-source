@@ -18,6 +18,7 @@
 #include "faction.h"
 #include "unit.h"
 #include "game.h"
+#include "core_data.h"
 #include "logger.h"
 #include "sound_renderer.h"
 #include "game_settings.h"
@@ -805,6 +806,7 @@ void World::underTakeDeadFactionUnits() {
 
 void World::updateAllFactionConsumableCosts() {
 	//food costs
+	bool warningSoundNeeded=false;
 	int resourceTypeCount = techTree->getResourceTypeCount();
 	int factionCount = getFactionCount();
 	for(int i = 0; i < resourceTypeCount; ++i) {
@@ -815,10 +817,14 @@ void World::updateAllFactionConsumableCosts() {
 				if(faction == NULL) {
 					throw megaglest_runtime_error("faction == NULL");
 				}
-
-				faction->applyCostsOnInterval(rt);
+				warningSoundNeeded = warningSoundNeeded || faction->applyCostsOnInterval(rt);
 			}
 		}
+	}
+	if (warningSoundNeeded) {
+		CoreData &coreData = CoreData::getInstance();
+		//StaticSound *sound= static_cast<const DieSkillType *>(unit->getType()->getFirstStOfClass(scDie))->getSound();
+		SoundRenderer::getInstance().playFx(coreData.getHighlightSound());
 	}
 }
 
@@ -1288,7 +1294,7 @@ void World::morphToUnit(int unitId,const string &morphName,bool ignoreRequiremen
 					}
 
 					const UnitType* unitType = mct->getMorphUnit();
-					cr = this->game->getCommander()->tryGiveCommand(unit, mct,unit->getPos(), unitType,CardinalDir::NORTH);
+					cr = this->game->getCommander()->tryGiveCommand(unit, mct,unit->getPos(), unitType,CardinalDir(CardinalDir::NORTH));
 				}
 				catch(const exception &ex) {
 					if(SystemFlags::getSystemSettingType(SystemFlags::debugLUA).enabled) SystemFlags::OutputDebug(SystemFlags::debugLUA,"In [%s::%s Line: %d]\n",__FILE__,__FUNCTION__,__LINE__);
@@ -1337,7 +1343,7 @@ void World::createUnit(const string &unitName, int factionIndex, const Vec2i &po
 				throw megaglest_runtime_error("detected unsupported pathfinder type!",true);
 	    }
 
-		Unit* unit= new Unit(getNextUnitId(faction), newpath, pos, ut, faction, &map, CardinalDir::NORTH);
+		Unit* unit= new Unit(getNextUnitId(faction), newpath, pos, ut, faction, &map, CardinalDir(CardinalDir::NORTH));
 
 		if(SystemFlags::getSystemSettingType(SystemFlags::debugUnitCommands).enabled) SystemFlags::OutputDebug(SystemFlags::debugUnitCommands,"In [%s::%s Line: %d] unit created for unit [%s]\n",__FILE__,__FUNCTION__,__LINE__,unit->toString().c_str());
 
@@ -2269,7 +2275,7 @@ void World::initUnits() {
 								throw megaglest_runtime_error("detected unsupported pathfinder type!");
 						}
 
-						Unit *unit= new Unit(getNextUnitId(f), newpath, Vec2i(0), ut, f, &map, CardinalDir::NORTH);
+						Unit *unit= new Unit(getNextUnitId(f), newpath, Vec2i(0), ut, f, &map, CardinalDir(CardinalDir::NORTH));
 						int startLocationIndex= f->getStartLocationIndex();
 						placeUnitAtLocation(map.getStartLocation(startLocationIndex), generationArea, unit, true);
 					}

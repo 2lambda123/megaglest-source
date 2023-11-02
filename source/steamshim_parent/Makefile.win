@@ -1,0 +1,31 @@
+TARGET				= megaglest_shim
+GAME_LAUNCH_NAME	= megaglest
+
+!ifndef STEAMWORKS
+# STEAMWORKS			= ..\..\..\steamworks_sdk\sdk
+!error STEAMWORKS is not set
+!endif
+
+# CXX = cl.exe /O2 /DNDEBUG
+LNK     = link.exe
+FLAGS = /I $(STEAMWORKS)\public -DGAME_LAUNCH_NAME=\"$(GAME_LAUNCH_NAME)\"
+# LIB_PATH = "/LIBPATH:$(STEAMWORKS)\redistributable_bin" /VERBOSE:LIB
+LIB_PATH = "/LIBPATH:$(STEAMWORKS)\redistributable_bin"
+LIBS = steam_api.lib gdi32.lib user32.lib
+
+!if "$(DEBUG)" == "1"
+FLAGS = $(FLAGS) -DSTEAMSHIM_DEBUG
+!endif
+
+.PHONY : clean all
+all : app
+
+app: steamshim_parent.obj
+	$(LNK) $(LIB_PATH) $(LIBS) /machine:X86 /OUT:$(TARGET).exe steamshim_parent.obj 
+
+steamshim_parent.obj: steamshim_parent.cpp
+	$(CXX) /MT $(CXXFLAGS) $(FLAGS) /c steamshim_parent.cpp /Fosteamshim_parent.obj
+	
+clean:
+	@-erase steamshim_parent.obj
+	@-erase $(TARGET).exe

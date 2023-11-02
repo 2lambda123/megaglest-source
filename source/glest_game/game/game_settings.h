@@ -183,7 +183,7 @@ public:
 		aiAcceptSwitchTeamPercentChance = 30;
 		masterserver_admin = -1;
 		masterserver_admin_factionIndex = -1;
-    	fallbackCpuMultiplier = 1.0f;
+    	fallbackCpuMultiplier = 1.5f;
     	networkAllowNativeLanguageTechtree = true;
     }
 
@@ -451,7 +451,7 @@ public:
 
 		this->networkPlayerGameStatus[factionIndex]= status;
 	}
-	void setNetworkPlayerLanguages(int factionIndex, string language) {
+	void setNetworkPlayerLanguages(int factionIndex, const string &language) {
 		if(factionIndex < 0 || factionIndex >= GameConstants::maxPlayers) {
 			char szBuf[8096]="";
 			snprintf(szBuf,8096,"In [%s] Invalid factionIndex = %d\n",__FUNCTION__,factionIndex);
@@ -536,7 +536,7 @@ public:
 	void setTilesetCRC(uint32 value) { tilesetCRC = value; }
 	void setTechCRC(uint32 value)    { techCRC = value; }
 
-	void setFactionCRCList(vector<pair<string,uint32> > value) { factionCRCList = value; }
+	void setFactionCRCList(const vector<pair<string,uint32> > &value) { factionCRCList = value; }
 
 	int getAiAcceptSwitchTeamPercentChance() const 				{ return aiAcceptSwitchTeamPercentChance;}
 	void setAiAcceptSwitchTeamPercentChance(int value)			{ aiAcceptSwitchTeamPercentChance = value; }

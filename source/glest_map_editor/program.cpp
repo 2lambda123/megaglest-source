@@ -153,6 +153,7 @@ Program::Program(int w, int h, string playerName) {
 	ofsetY = 0;
 
 	map = new MapPreview();
+
 	resetFactions(8);
 	renderer.initMapSurface(w, h);
 	map->setAuthor(playerName);
@@ -217,12 +218,12 @@ void Program::changeMapSurface(int x, int y, int surface, int radius) {
 	if(map) map->changeSurface((x - ofsetX) / cellSize, (y + ofsetY) / cellSize, static_cast<MapSurfaceType>(surface), radius);
 }
 
-void Program::changeMapObject(int x, int y, int object, int radius) {
-	if(map) map->changeObject((x - ofsetX) / cellSize, (y + ofsetY) / cellSize, object, radius);
+void Program::changeMapObject(int x, int y, int object, int radius, bool overwrite) {
+    if(map) map->changeObject((x - ofsetX) / cellSize, (y + ofsetY) / cellSize, object, radius, overwrite);
 }
 
-void Program::changeMapResource(int x, int y, int resource, int radius) {
-	if(map) map->changeResource((x - ofsetX) / cellSize, (y + ofsetY) / cellSize, resource, radius);
+void Program::changeMapResource(int x, int y, int resource, int radius, bool overwrite) {
+    if(map) map->changeResource((x - ofsetX) / cellSize, (y + ofsetY) / cellSize, resource, radius, overwrite);
 }
 
 void Program::changeStartLocation(int x, int y, int player) {
@@ -264,9 +265,9 @@ bool Program::redo() {
 	return true;
 }
 
-void Program::renderMap(int w, int h) {
+void Program::renderMap(int w, int h, pair<int,int>* mouse_pos, int* radius) {
 	//printf("Rendering map\n");
-	if(map) renderer.renderMap(map, ofsetX, ofsetY, w, h, cellSize, grid,heightmap,hideWater);
+    if(map) renderer.renderMap(map, ofsetX, ofsetY, w, h, cellSize, grid,heightmap,hideWater,mouse_pos,radius);
 }
 
 void Program::setRefAlt(int x, int y) {
@@ -565,6 +566,10 @@ void Program::randomizeMapHeights(bool withReset,int minimumHeight, int maximumH
 	if(map) map->randomizeHeights(withReset, minimumHeight,  maximumHeight,  chanceDivider,  smoothRecursions);
 }
 
+void Program::importMapHeights(unsigned char* data) {
+    if(map) map->importMapHeights(data);
+}
+
 void Program::randomizeFactions() {
 	if(map) map->randomizeFactions();
 }
@@ -579,8 +584,8 @@ void Program::reset(int w, int h, int alt, int surf) {
 	if(map) map->reset(w, h, (float) alt, static_cast<MapSurfaceType>(surf));
 }
 
-void Program::resize(int w, int h, int alt, int surf) {
-	if(map) map->resize(w, h, (float) alt, static_cast<MapSurfaceType>(surf));
+void Program::resize(int w, int h) {
+    if(map) map->resize(w, h);
 }
 
 void Program::resetFactions(int maxFactions) {

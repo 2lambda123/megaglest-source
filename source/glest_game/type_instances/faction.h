@@ -101,7 +101,7 @@ protected:
 	virtual bool canShutdown(bool deleteSelfIfShutdownDelayed=false);
 
 public:
-	FactionThread(Faction *faction);
+	explicit FactionThread(Faction *faction);
 	virtual ~FactionThread();
     virtual void execute();
 
@@ -238,10 +238,10 @@ public:
 	//std::map<int,int> unitsMovingList;
 	void addUnitToMovingList(int unitId);
 	void removeUnitFromMovingList(int unitId);
-	int getUnitMovingListCount();
+	//int getUnitMovingListCount();
 
 	void addUnitToPathfindingList(int unitId);
-	void removeUnitFromPathfindingList(int unitId);
+	//void removeUnitFromPathfindingList(int unitId);
 	int getUnitPathfindingListCount();
 	void clearUnitsPathfinding();
 	bool canUnitsPathfind();
@@ -314,8 +314,9 @@ public:
 	void deApplyCosts(const ProducibleType *p,const CommandType *ct);
 	void deApplyStaticCosts(const ProducibleType *p,const CommandType *ct);
 	void deApplyStaticConsumption(const ProducibleType *p,const CommandType *ct);
-	void applyCostsOnInterval(const ResourceType *rtApply);
+	bool applyCostsOnInterval(const ResourceType *rtApply);
 	bool checkCosts(const ProducibleType *pt,const CommandType *ct);
+	int getAmountOfProducable(const ProducibleType *pt,const CommandType *ct);
 
 	//reqs
 	bool reqsOk(const RequirableType *rt) const;
@@ -347,9 +348,9 @@ public:
 	void cleanupResourceTypeTargetCache(std::vector<Vec2i> *deleteListPtr,int frameIndex);
 	inline int getCacheResourceTargetListSize() const { return (int)cacheResourceTargetList.size(); }
 
-	Unit * findClosestUnitWithSkillClass(const Vec2i &pos,const CommandClass &cmdClass,
-										const std::vector<SkillClass> &skillClassList,
-										const UnitType *unitType);
+//	Unit * findClosestUnitWithSkillClass(const Vec2i &pos,const CommandClass &cmdClass,
+//										const std::vector<SkillClass> &skillClassList,
+//										const UnitType *unitType);
 
 	void deletePixels();
 

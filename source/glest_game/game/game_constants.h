@@ -47,13 +47,17 @@ public:
     }
     static string getString(const T &value) {
     	static EnumParser<T> parser;
-    	for(enumMapTypeIter iValue = parser.enumMap.first();
+    	for(enumMapTypeIter iValue = parser.enumMap.begin();
     			iValue != parser.enumMap.end(); ++iValue) {
     		if(iValue->second  == value) {
     			return iValue->first;
     		}
     	}
        	throw std::runtime_error("unknown enum lookup [" + intToStr(value) + "]");
+    }
+    static int getCount() {
+    	static EnumParser<T> parser;
+    	return parser.enumMap.size();
     }
 };
 
@@ -147,10 +151,12 @@ public:
 	static const char *NETWORK_SLOT_CLOSED_SLOTNAME;
 
 	static const char *folder_path_screenshots;
+	static const char *folder_path_setups;
 
 	static const char *OBSERVER_SLOTNAME;
 	static const char *RANDOMFACTION_SLOTNAME;
 
+	static const char *steamCacheInstanceKey;
 	static const char *preCacheThreadCacheLookupKey;
 	static const char *playerTextureCacheLookupKey;
 	static const char *ircClientCacheLookupKey;
@@ -200,7 +206,7 @@ public:
 	enum Enum { NORTH, EAST, SOUTH, WEST, COUNT };
 
 	CardinalDir() : value(NORTH) {}
-	CardinalDir(Enum v) : value(v) {}
+	explicit CardinalDir(Enum v) : value(v) {}
 	explicit CardinalDir(int v) {
 		assertDirValid(v);
 		value = static_cast<Enum>(v);

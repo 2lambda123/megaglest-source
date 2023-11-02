@@ -59,7 +59,7 @@ public:
 // =====================================================
 //	Misc
 // =====================================================
-void message(string message,bool isNonGraphicalModeEnabled, string writepath);
+void message(const string &message,bool isNonGraphicalModeEnabled, const string &writepath);
 void exceptionMessage(const exception &excp);
 
 string getCommandLine();
@@ -102,7 +102,7 @@ std::string utf8_encode(const std::wstring &wstr);
 std::wstring utf8_decode(const std::string &str);
 std::string getRegKey(const std::string& location, const std::string& name);
 
-void message(string message, bool isNonGraphicalModeEnabled,string writepath);
+void message(string message, bool isNonGraphicalModeEnabled,const string &writepath);
 void exceptionMessage(const exception &excp);
 string getCommandLine();
 void init_win32();
@@ -112,7 +112,7 @@ void ontop_win32(int width, int height);
 void CheckPacketThrottling();
 
 // The following is used for stacking tracing for windows based exceptions
-#if !defined(_DEBUG) && !defined(__GNUC__)
+#if !defined(__GNUC__)
 
 // easy safe strings
 #define MAXSTRLEN 260

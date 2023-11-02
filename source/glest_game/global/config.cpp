@@ -47,10 +47,12 @@ const char *GameConstants::NETWORK_SLOT_UNCONNECTED_SLOTNAME = "???";
 const char *GameConstants::NETWORK_SLOT_CLOSED_SLOTNAME = "Closed";
 
 const char *GameConstants::folder_path_screenshots	= "screens/";
+const char *GameConstants::folder_path_setups	= "setups/";
 
 const char *GameConstants::OBSERVER_SLOTNAME		= "*Observer*";
 const char *GameConstants::RANDOMFACTION_SLOTNAME	= "*Random*";
 
+const char *GameConstants::steamCacheInstanceKey  			= "steamInstanceCache";
 const char *GameConstants::preCacheThreadCacheLookupKey  		= "preCacheThreadCache";
 const char *GameConstants::ircClientCacheLookupKey  			= "ircClientCache";
 const char *GameConstants::playerTextureCacheLookupKey  		= "playerTextureCache";
@@ -181,11 +183,21 @@ Config::Config(std::pair<ConfigType,ConfigType> type, std::pair<string,string> f
 
 #if defined(CUSTOM_DATA_INSTALL_PATH)
   	if(foundPath == false) {
+#ifndef NO_APPIMAGE
+  		foundPath = tryCustomPath(cfgType, fileName, Properties::appendAppDirPath(formatPath(TOSTRING(CUSTOM_DATA_INSTALL_PATH))));
+#else
   		foundPath = tryCustomPath(cfgType, fileName, formatPath(TOSTRING(CUSTOM_DATA_INSTALL_PATH)));
+#endif
   	}
 #endif
 
-    // Look in standard linux shared paths for ini files
+#if defined(MG_CMAKE_INSTALL_PREFIX)
+  	if(foundPath == false) {
+  		foundPath = tryCustomPath(cfgType, fileName, formatPath(TOSTRING(MG_CMAKE_INSTALL_PREFIX)));
+  	}
+#endif
+
+// Look in standard linux shared paths for ini files
 #if defined(__linux__)
     if(foundPath == false) {
     	foundPath = tryCustomPath(cfgType, fileName, "/usr/share/megaglest/");

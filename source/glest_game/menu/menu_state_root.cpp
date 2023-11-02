@@ -25,6 +25,8 @@
 #include "network_message.h"
 #include "socket.h"
 #include "auto_test.h"
+#include "cache_manager.h"
+#include "steam.h"
 #include <stdio.h>
 
 #include "leak_dumper.h"
@@ -46,6 +48,7 @@ MenuStateRoot::MenuStateRoot(Program *program, MainMenu *mainMenu) :
 											buttonAbout("MainMenu","buttonAbout"),
 											buttonExit("MainMenu","buttonExit"),
 											labelVersion("MainMenu","labelVersion"),
+											labelGreeting("MainMenu","labelGreeting"),
 
 											mainMessageBox("MainMenu","mainMessageBox"),
 											errorMessageBox("MainMenu","errorMessageBox"),
@@ -74,6 +77,15 @@ MenuStateRoot::MenuStateRoot(Program *program, MainMenu *mainMenu) :
 		labelVersion.init(buttonXPosition, yPos);
 		//labelVersion.setText(glestVersionString + " [" + getCompileDateTime() + ", " + getGITRevisionString() + "]");
 		labelVersion.setText(glestVersionString + " [" + getGITRevisionString() + "]");
+	}
+
+	labelGreeting.init(labelVersion.getX(), labelVersion.getY()-16);
+	labelGreeting.setText("");
+
+	Steam *steamInstance = CacheManager::getCachedItem< Steam *>(GameConstants::steamCacheInstanceKey);
+	if(steamInstance != NULL) {
+		string steamPlayerName = steamInstance->userName();
+		labelGreeting.setText("Welcome Steam Player: " + steamPlayerName);
 	}
 
 	yPos-=55;
@@ -581,6 +593,7 @@ void MenuStateRoot::render() {
 	renderer.renderButton(&buttonAbout);
 	renderer.renderButton(&buttonExit);
 	renderer.renderLabel(&labelVersion);
+	renderer.renderLabel(&labelGreeting);
 
 	renderer.renderConsole(&console);
 

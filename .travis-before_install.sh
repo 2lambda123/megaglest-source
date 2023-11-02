@@ -28,7 +28,8 @@ if [ "$Compiler_version" != "" ] && [ "$Compiler_version" != "default" ]; then
     set -x
     if [ "$VersionAvByDefault" = "" ]; then
 	if [ "$distribution" = "Ubuntu" ]; then
-	    if [ "$Compiler_name" = "gcc" ] || ( [ "$Compiler_name" = "clang" ] && [ "$codename" = "precise" ] ); then
+	    #if [ "$Compiler_name" = "gcc" ] || ( [ "$Compiler_name" = "clang" ] && [ "$codename" = "precise" ] ); then
+	    if [ "$Compiler_name" = "gcc" ] || [ "$Compiler_name" = "clang" ]; then
 		# https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
 		sudo add-apt-repository --yes "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu ${codename} main"
 		#sudo add-apt-repository --yes "deb-src http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu ${codename} main"
@@ -47,7 +48,6 @@ if [ "$Compiler_version" != "" ] && [ "$Compiler_version" != "default" ]; then
 	fi
     fi
 fi
-set -e
 
 if [ "$VersionAvByDefault" = "" ]; then
     # UPDATE REPOS
@@ -55,6 +55,7 @@ if [ "$VersionAvByDefault" = "" ]; then
     #sudo apt-get upgrade -qq # UPGRADE SYSTEM TO LATEST PATCH LEVEL
     sudo apt-get install -y -qq
 fi
+set -e
 
 if [ "$Compiler_version" != "" ] && [ "$Compiler_version" != "default" ]; then
     if [ "$Compiler_name" = "gcc" ]; then

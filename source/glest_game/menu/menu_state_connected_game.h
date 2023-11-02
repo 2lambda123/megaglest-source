@@ -65,7 +65,7 @@ private:
 	GraphicLabel labelStatus;
 	GraphicLabel labelInfo;
 	GraphicLabel labelWaitingForPlayers;
-	GraphicButton buttonRestoreLastSettings;
+
 
 	//GraphicLabel labelPathFinderType;
 	//GraphicListBox listBoxPathFinderType;
@@ -76,7 +76,7 @@ private:
 	GraphicLabel labelAdvanced;
 	GraphicListBox listBoxAdvanced;
 
-	GraphicListBox listBoxMap;
+	GraphicComboBox comboBoxMap;
 	GraphicListBox listBoxFogOfWar;
 	GraphicListBox listBoxTechTree;
 	GraphicListBox listBoxTileset;
@@ -97,6 +97,14 @@ private:
 
 	GraphicLabel labelAllowObservers;
 	GraphicCheckBox checkBoxAllowObservers;
+
+	GraphicButton buttonSaveSetup;
+	GraphicLabel labelSaveSetupName;
+	GraphicButton buttonLoadSetup;
+	GraphicButton buttonDeleteSetup;
+    GraphicComboBox comboBoxLoadSetup;
+    string savedSetupsDir;
+	vector<string> savedSetupFilenames;
 
 	GraphicLabel labelAllowNativeLanguageTechtree;
 	GraphicCheckBox checkBoxAllowNativeLanguageTechtree;
@@ -180,8 +188,6 @@ private:
 
 	std::map<string,uint32> mapCRCUpdateList;
 
-
-
     string getMissingMapFromFTPServer;
     bool getMissingMapFromFTPServerInProgress;
     time_t getMissingMapFromFTPServerLastPrompted;
@@ -223,7 +229,6 @@ private:
 	GraphicLabel labelFallbackCpuMultiplier;
 	GraphicListBox listBoxFallbackCpuMultiplier;
 
-
 	GraphicButton buttonPlayNow;
 
 	GraphicCheckBox checkBoxScenario;
@@ -253,6 +258,7 @@ private:
 	GameSettings displayedGamesettings;
 	bool validDisplayedGamesettings;
 
+    string lastPreviewedMapFile;
 
 public:
 
@@ -260,7 +266,9 @@ public:
 	virtual ~MenuStateConnectedGame();
 
 	void mouseClick(int x, int y, MouseButton mouseButton);
+	void mouseDoubleClick(int x, int y, MouseButton mouseButton){};
 	void mouseMove(int x, int y, const MouseState *mouseState);
+	void eventMouseWheel(int x, int y,int zDelta);
 	void render();
 	void update();
 
@@ -277,6 +285,7 @@ public:
 
 private:
 
+    void setSmallFont(GraphicLabel l);
     bool hasNetworkGameSettings();
 	bool loadFactions(const GameSettings *gameSettings,bool errorOnNoFactions);
 	void returnToJoinMenu();
@@ -284,7 +293,7 @@ private:
 	void setActiveInputLabel(GraphicLabel *newLable);
 
 	void loadFactionTexture(string filepath);
-	bool loadMapInfo(string file, MapInfo *mapInfo, bool loadMapPreview);
+	bool loadMapInfo(string file, MapInfo *mapInfo, bool loadMapPreview, bool doPlayerSetup);
 	void showMessageBox(const string &text, const string &header, bool toggle);
 
     void showFTPMessageBox(const string &text, const string &header, bool toggle);
@@ -298,17 +307,22 @@ private:
     void switchToNextMapGroup(const int direction);
     void switchToMapGroup(int filterIndex);
     string getCurrentMapFile();
-    void loadGameSettings(GameSettings *gameSettings);
+	string getPreselectedMapFile();
+
+    void copyToGameSettings(GameSettings *gameSettings);
     void reloadFactions(bool keepExistingSelectedItem,string scenario);
     void PlayNow(bool saveGame);
     bool isHeadlessAdmin();
     void broadCastGameSettingsToHeadlessServer(bool forceNow);
     void updateResourceMultiplier(const int index);
 
+	void saveGameSettings(std::string fileName);
+	bool loadGameSettings(const std::string &fileName);
     void RestoreLastGameSettings();
     void setupUIFromGameSettings(GameSettings *gameSettings, bool errorOnMissingData);
 
 	int setupMapList(string scenario);
+	void loadSavedSetupNames();
 	int setupTechList(string scenario, bool forceLoad=false);
 	void setupTilesetList(string scenario);
 

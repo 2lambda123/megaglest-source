@@ -45,7 +45,6 @@ class MenuStateCustomGame : public MenuState, public SimpleTaskCallbackInterface
 private:
 	GraphicButton buttonReturn;
 	GraphicButton buttonPlayNow;
-	GraphicButton buttonRestoreLastSettings;
 	GraphicLabel labelControl;
 	GraphicLabel labelRMultiplier;
 	GraphicLabel labelFaction;
@@ -55,11 +54,9 @@ private:
 	GraphicLabel labelTechTree;
 	GraphicLabel labelTileset;
 	GraphicLabel labelMapInfo;
-	GraphicLabel labelLocalGameVersion;
-	GraphicLabel labelLocalIP;
 	GraphicLabel labelGameName;
 
-	GraphicListBox listBoxMap;
+	GraphicComboBox comboBoxMap;
 	GraphicListBox listBoxFogOfWar;
 	GraphicListBox listBoxTechTree;
 	GraphicListBox listBoxTileset;
@@ -126,6 +123,16 @@ private:
 	GraphicLabel labelAllowNativeLanguageTechtree;
 	GraphicCheckBox checkBoxAllowNativeLanguageTechtree;
 
+	GraphicButton buttonShowLanInfo;
+
+	GraphicButton buttonSaveSetup;
+	GraphicLabel labelSaveSetupName;
+	GraphicButton buttonLoadSetup;
+	GraphicButton buttonDeleteSetup;
+    GraphicComboBox comboBoxLoadSetup;
+    string savedSetupsDir;
+	vector<string> savedSetupFilenames;
+
 	GraphicCheckBox checkBoxScenario;
 	GraphicLabel labelScenario;
 	GraphicListBox listBoxScenario;
@@ -144,6 +151,8 @@ private:
 	time_t lastMasterserverPublishing;
 	time_t lastNetworkPing;
 	time_t mapPublishingDelayTimer;
+	time_t lastTechtreeChange;
+
 	bool needToPublishDelayed;
 
 	bool headlessHasConnectedPlayer;
@@ -205,9 +214,10 @@ private:
     string lastCheckedCRCTechtreeName;
     string lastCheckedCRCMapName;
 
-    string last_Forced_CheckedCRCTilesetName;
-    string last_Forced_CheckedCRCTechtreeName;
-    string last_Forced_CheckedCRCMapName;
+    string lastRecalculatedCRCTilesetName;
+    string lastRecalculatedCRCTechtreeName;
+
+    time_t initTime;
 
     uint32 lastCheckedCRCTilesetValue;
     uint32 lastCheckedCRCTechtreeValue;
@@ -225,6 +235,8 @@ private:
 
     int lastGameSettingsreceivedCount;
 
+    string lastPreviewedMapFile;
+
 public:
 	MenuStateCustomGame(Program *program, MainMenu *mainMenu ,
 			bool openNetworkSlots= false, ParentMenuState parentMenuState=pNewGame,
@@ -233,7 +245,9 @@ public:
 	virtual ~MenuStateCustomGame();
 
 	void mouseClick(int x, int y, MouseButton mouseButton);
+	void mouseDoubleClick(int x, int y, MouseButton mouseButton){};
 	void mouseMove(int x, int y, const MouseState *mouseState);
+	void eventMouseWheel(int x, int y,int zDelta);
 	void render();
 	void update();
 
@@ -255,10 +269,14 @@ public:
     virtual bool isVideoPlaying();
 private:
 
+    void setCRCsToSettingsInternal(GameSettings *gameSettings, bool forceRefresh);
+    void setCRCsToGameSettings(GameSettings *gameSettings);
+    void setRefreshedCrcToGameSettings(GameSettings *gameSettings);
+    void setSmallFont(GraphicLabel l);
     void lastPlayerDisconnected();
     bool hasNetworkGameSettings();
-    void loadGameSettings(GameSettings *gameSettings, bool forceCloseUnusedSlots=false);
-	void loadMapInfo(string file, MapInfo *mapInfo,bool loadMapPreview);
+    void copyToGameSettings(GameSettings *gameSettings, bool forceCloseUnusedSlots=false);
+	void loadMapInfo(string file, MapInfo *mapInfo,bool loadMapPreview, bool doPlayerSetup);
 	void cleanupMapPreviewTexture();
 
 	void updateControlers();
@@ -268,18 +286,20 @@ private:
 	void returnToParentMenu();
 	void showMessageBox(const string &text, const string &header, bool toggle);
 
-	void saveGameSettingsToFile(std::string fileName);
 	void switchToNextMapGroup(const int direction);
 	void updateAllResourceMultiplier();
 	void updateResourceMultiplier(const int index);
 	string getCurrentMapFile();
+	string getPreselectedMapFile();
+
 	void setActiveInputLabel(GraphicLabel *newLable);
 	string getHumanPlayerName(int index=-1);
 
 	void loadFactionTexture(string filepath);
 
-	GameSettings loadGameSettingsFromFile(std::string fileName);
-	void loadGameSettings(std::string fileName);
+	void saveGameSettings(std::string fileName);
+	bool loadGameSettingsFromFile(GameSettings *gameSettings,std::string fileName);
+	bool loadGameSettings(const std::string &fileName);
 	void RestoreLastGameSettings();
 	void PlayNow(bool saveGame);
 
@@ -299,6 +319,7 @@ private:
 	void processScenario();
 	void SetupUIForScenarios();
 	int setupMapList(string scenario);
+	void loadSavedSetupNames();
 	int setupTechList(string scenario, bool forceLoad=false);
 	void reloadFactions(bool keepExistingSelectedItem, string scenario);
 	void setupTilesetList(string scenario);

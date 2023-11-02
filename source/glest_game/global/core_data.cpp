@@ -1143,16 +1143,16 @@ bool CoreData::hasMainMenuVideoFilename() const {
 	return result;
 }
 
-bool CoreData::hasBattleEndVideoFilename(bool won) const {
-	bool result = false;
-	if(won == true) {
-		result =(battleEndWinVideoFilename != "");
-	}
-	else {
-		result =(battleEndLoseVideoFilename != "");
-	}
-	return result;
-}
+//bool CoreData::hasBattleEndVideoFilename(bool won) const {
+//	bool result = false;
+//	if(won == true) {
+//		result =(battleEndWinVideoFilename != "");
+//	}
+//	else {
+//		result =(battleEndLoseVideoFilename != "");
+//	}
+//	return result;
+//}
 
 void CoreData::registerFontChangedCallback(std::string entityName, FontChangedCallbackInterface *cb) {
 	if(entityName == "") {
@@ -1175,7 +1175,7 @@ void CoreData::unRegisterFontChangedCallback(std::string entityName) {
 void CoreData::triggerFontChangedCallbacks(std::string fontUniqueId, Font *font) {
 	for (std::map<std::string, std::vector<FontChangedCallbackInterface *> >::const_iterator iterMap =
 		registeredFontChangedCallbacks.begin();
-		iterMap != registeredFontChangedCallbacks.end(); iterMap++) {
+		iterMap != registeredFontChangedCallbacks.end(); ++iterMap) {
 		for (unsigned int index = 0; index < iterMap->second.size(); ++index) {
 			//printf("Font Callback detected calling: Control [%s] for Font: [%s] value [%p]\n",iterMap->first.c_str(),fontUniqueId.c_str(),font);
 			FontChangedCallbackInterface *cb = iterMap->second[index];
@@ -1363,12 +1363,13 @@ void CoreData::saveGameSettingsToFile(std::string fileName, GameSettings *gameSe
 	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s] Line: %d\n",__FILE__,__FUNCTION__,__LINE__);
 
     Config &config = Config::getInstance();
-    string userData = config.getString("UserData_Root","");
-    if(userData != "") {
-    	endPathWithSlash(userData);
+    string saveSetupDir = config.getString("UserData_Root","");
+    if(saveSetupDir != "") {
+    	endPathWithSlash(saveSetupDir);
     }
-    fileName = userData + fileName;
-
+    fileName = saveSetupDir + fileName;
+    // create path if non existant
+	createDirectoryPaths(extractDirectoryPathFromFile(fileName));
     if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d] fileName = [%s]\n",__FILE__,__FUNCTION__,__LINE__,fileName.c_str());
 
 #if defined(WIN32) && !defined(__MINGW32__)
@@ -1428,12 +1429,13 @@ bool CoreData::loadGameSettingsFromFile(std::string fileName, GameSettings *game
 
 	bool fileWasFound = false;
     Config &config = Config::getInstance();
-    string userData = config.getString("UserData_Root","");
-    if(userData != "") {
-    	endPathWithSlash(userData);
+    string saveSetupDir = config.getString("UserData_Root","");
+    if(saveSetupDir != "") {
+    	endPathWithSlash(saveSetupDir);
     }
-    if(fileExists(userData + fileName) == true) {
-    	fileName = userData + fileName;
+
+    if(fileExists(saveSetupDir + fileName) == true) {
+    	fileName = saveSetupDir + fileName;
     	fileWasFound = true;
     }
 

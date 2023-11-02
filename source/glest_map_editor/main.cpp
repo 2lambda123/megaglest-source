@@ -18,6 +18,7 @@
 #include <iostream>
 #include"platform_util.h"
 #include <wx/stdpaths.h>
+#include "wx/image.h"
 #ifndef WIN32
 #include <errno.h>
 #endif
@@ -30,7 +31,7 @@ using namespace Glest::Game;
 using namespace std;
 
 namespace Glest { namespace Game {
-string getGameReadWritePath(string lookupKey) {
+string getGameReadWritePath(const string &lookupKey) {
 	string path = "";
     if(path == "" && getenv("GLESTHOME") != NULL) {
         path = getenv("GLESTHOME");
@@ -47,7 +48,7 @@ string getGameReadWritePath(string lookupKey) {
 
 namespace MapEditor {
 
-const string mapeditorVersionString = "v3.13.0";
+const string mapeditorVersionString = "v3.13-dev";
 const string MainWindow::winHeader = "MegaGlest Map Editor " + mapeditorVersionString;
 
 // ===============================================
@@ -104,6 +105,8 @@ MainWindow::MainWindow(string appPath)
 	resourceUnderMouse=0;
 	objectUnderMouse=0;
 
+    shiftModifierKey = false;
+
 	// default values for random height calculation that turned out to be quite useful
 	randomWithReset=true;
 	randomMinimumHeight=-300;
@@ -113,6 +116,12 @@ MainWindow::MainWindow(string appPath)
 
 	this->appPath = appPath;
 	Properties::setApplicationPath(executable_path(appPath));
+#ifndef NO_APPIMAGE
+	Properties::setAppDirPath();
+#ifdef APPIMAGE_NODATA
+	Properties::setAppimageDirPath();
+#endif
+#endif
 
 	this->panel = new wxPanel(this, wxID_ANY);
 }
@@ -156,8 +165,8 @@ void MainWindow::init(string fname) {
 	menuBar->Append(menuFile, wxT("&File"));
 
 	//edit
-	menuEdit = new wxMenu();
-	menuEdit->Append(miEditUndo, wxT("&Undo\tCTRL+Z"));
+    menuEdit = new wxMenu();
+    menuEdit->Append(miEditUndo, wxT("&Undo\tCTRL+Z"));
 	menuEdit->Append(miEditRedo, wxT("&Redo\tCTRL+Y"));
 	menuEdit->AppendSeparator();
 //	menuEdit->Append(miEditReset, wxT("Rese&t..."));
@@ -181,6 +190,8 @@ void MainWindow::init(string fname) {
     // ---------------------------------------------------------
 
 	menuEdit->Append(miEditRandomizeHeights, wxT("Randomize &Heights"));
+    menuEdit->Append(miEditImportHeights, wxT("Import Heightsmap"));
+    menuEdit->Append(miEditExportHeights, wxT("Export Heightsmap"));
 	menuEdit->Append(miEditRandomize, wxT("Randomi&ze Players"));
 	menuEdit->Append(miEditSwitchSurfaces, wxT("Switch Sur&faces..."));
 	menuEdit->Append(miEditInfo, wxT("&Info..."));
@@ -226,7 +237,7 @@ void MainWindow::init(string fname) {
 	menuBrushObject->AppendSeparator();
 	menuBrushObject->AppendCheckItem(miBrushObject+2, wxT("&Tree (harvestable)"));
 	menuBrushObject->AppendCheckItem(miBrushObject+3, wxT("&Dead tree/Cactuses/Thornbush"));
-	menuBrushObject->AppendCheckItem(miBrushObject+4, wxT("&Stone"));
+	menuBrushObject->AppendCheckItem(miBrushObject+4, wxT("&Stone (unharvestable)"));
 	menuBrushObject->AppendCheckItem(miBrushObject+5, wxT("&Bush/Grass/Fern (walkable)"));
 	menuBrushObject->AppendCheckItem(miBrushObject+6, wxT("&Water object/Reed/Papyrus (walkable)"));
 	menuBrushObject->AppendCheckItem(miBrushObject+7, wxT("Big tree/&Old palm"));
@@ -311,6 +322,7 @@ void MainWindow::init(string fname) {
 	SetStatusText(wxT(".mgm"), siFILE_TYPE);
 	SetStatusText(wxT("Object: None (Erase)"), siCURR_OBJECT);
 	SetStatusText(wxT("Brush: Height"), siBRUSH_TYPE);
+    SetStatusText(wxT("Type: Overwrite"), siBRUSH_OVERWRITE);
 	SetStatusText(wxT("Value: 0"), siBRUSH_VALUE);
 	SetStatusText(wxT("Radius: 1"), siBRUSH_RADIUS);
 	SetStatusText(wxT("Pos (Ingame): 0"), siPOS_VALUE);
@@ -418,6 +430,7 @@ void MainWindow::init(string fname) {
 	fileDialog = new wxFileDialog(this);
     string defaultPath = userData + "maps/";
     fileDialog->SetDirectory(ToUnicode(defaultPath));
+    heightMapDirectory=fileDialog->GetDirectory();
 
 	//printf("Default Path [%s]\n",defaultPath.c_str());
 
@@ -486,7 +499,7 @@ void MainWindow::onClose(wxCloseEvent &event) {
 
 void MainWindow::initGlCanvas(){
 	if(glCanvas == NULL) {
-		int args[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_MIN_ALPHA,  8 };
+		int args[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_MIN_ALPHA, 8, 0 };
 		glCanvas = new GlCanvas(this, this->panel, args);
 
 		boxsizer->Add(glCanvas, 1, wxEXPAND);
@@ -538,8 +551,7 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setDirty(bool val) {
-	wxPaintEvent ev;
-	onPaint(ev);
+	refreshThings();
 	if (fileModified && val) {
 		return;
 	}
@@ -575,8 +587,8 @@ void MainWindow::onMouseDown(wxMouseEvent &event, int x, int y) {
 		if (!isDirty()) {
 			setDirty(true);
 		}
-		wxPaintEvent ev;
-		onPaint(ev);
+
+		refreshThings();
 	}
 	event.Skip();
 }
@@ -586,38 +598,34 @@ void MainWindow::onMouseWheelDown(wxMouseEvent &event) {
 	if(program == NULL) {
 		return;
 	}
-	wxPaintEvent ev;
 	program->incCellSize(1);
-	onPaint(ev);
+	refreshThings();
 }
 
 void MainWindow::onMouseWheelUp(wxMouseEvent &event) {
 	if(program == NULL) {
 		return;
 	}
-	wxPaintEvent ev;
 	program->incCellSize(-1);
-	onPaint(ev);
+	refreshThings();
 }
 
 void MainWindow::onMouseMove(wxMouseEvent &event, int x, int y) {
 	if(program == NULL) {
 		return;
 	}
-	bool repaint = false;
+    mouse_pos.first = program->getCellX(x);
+    mouse_pos.second = program->getCellY(y);
 	if (event.LeftIsDown()) {
 		change(x, y);
-		repaint = true;
 	} else if (event.MiddleIsDown()) {
 		int dif = (y - lastY);
 		if (dif != 0) {
 			program->incCellSize(dif / abs(dif));
-			repaint = true;
 		}
 	} else if (event.RightIsDown()) {
 		program->setOfset(x - lastX, y - lastY);
-		repaint = true;
-	} else {
+    } else {
 		int currResource = program->getResource(x, y);
 		if (currResource > 0) {
 			SetStatusText(wxT("Resource: ") + ToUnicode(resource_descs[currResource]), siCURR_OBJECT);
@@ -646,39 +654,21 @@ void MainWindow::onMouseMove(wxMouseEvent &event, int x, int y) {
 	lastX = x;
 	lastY = y;
 
-	if (repaint) {
-		wxPaintEvent ev;
-		onPaint(ev);
-	}
+	refreshThings();
+
 	event.Skip();
 }
 
-void MainWindow::onPaint(wxPaintEvent &event) {
-	//printf("onPaint map\n");
-
+void MainWindow::refreshThings() {
 	if(!IsShown()) {
-		//printf("onPaint skip map\n");
-
-		event.Skip();
 		return;
 	}
-
-//#if wxCHECK_VERSION(2, 9, 3)
-
-//#elif wxCHECK_VERSION(2, 9, 1)
-//	glCanvas->setCurrentGLContext();
-//#endif
-
-	//static bool contextSet = false;
-	//if(contextSet == false) {
-	//	contextSet = true;
 	glCanvas->setCurrentGLContext();
 	//}
 
 	//printf("lastPaintEvent.getMillis() map\n");
 	if(lastPaintEvent.getMillis() < 30) {
 		sleep(1);
-		event.Skip();
 		return;
 	}
 
@@ -693,14 +683,22 @@ void MainWindow::onPaint(wxPaintEvent &event) {
 	if(menuBar) menuBar->Refresh(false);
 
 	refreshMapRender();
-	event.Skip();
+}
+void MainWindow::onPaint(wxPaintEvent &event) {
+		refreshThings();
+		event.Skip();
+		return;
 }
 
 void MainWindow::refreshMapRender() {
 	//printf("refreshMapRender map\n");
 
-	if(program && glCanvas) {
-		program->renderMap(glCanvas->GetClientSize().x, glCanvas->GetClientSize().y);
+    if(program && glCanvas) {
+        if(enabledGroup == ctLocation) {
+            program->renderMap(glCanvas->GetClientSize().x, glCanvas->GetClientSize().y);
+        } else {
+            program->renderMap(glCanvas->GetClientSize().x, glCanvas->GetClientSize().y, &mouse_pos, &radius);
+        }
 		glCanvas->SwapBuffers();
 	}
 }
@@ -714,15 +712,9 @@ void MainWindow::onMenuFileLoad(wxCommandEvent &event) {
 		fileDialog->SetMessage(wxT("Select Glestmap to load"));
 		fileDialog->SetWildcard(wxT("Glest&Mega Map (*.gbm *.mgm)|*.gbm;*.mgm|Glest Map (*.gbm)|*.gbm|Mega Map (*.mgm)|*.mgm"));
 		if (fileDialog->ShowModal() == wxID_OK) {
-#ifdef WIN32
-			const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(wxFNCONV(fileDialog->GetPath()));
-			currentFile = tmp_buf;
-
-			auto_ptr<wchar_t> wstr(Ansi2WideString(currentFile.c_str()));
-			currentFile = utf8_encode(wstr.get());
+#ifdef wxCHECK_VERSION(2, 9, 1)
+			currentFile = fileDialog->GetPath().ToStdString();
 #else
-			//currentFile = fileDialog->GetPath().ToAscii();
-
 			const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fileDialog->GetPath());
 			currentFile = tmp_buf;
 #endif
@@ -790,14 +782,10 @@ void MainWindow::onMenuFileSaveAs(wxCommandEvent &event) {
 
 	fd.SetWildcard(wxT("MegaGlest Map (*.mgm)|*.mgm|Glest Map (*.gbm)|*.gbm"));
 	if (fd.ShowModal() == wxID_OK) {
-#ifdef WIN32
-		const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(wxFNCONV(fd.GetPath()));
-		currentFile = tmp_buf;
 
-		auto_ptr<wchar_t> wstr(Ansi2WideString(currentFile.c_str()));
-		currentFile = utf8_encode(wstr.get());
+#ifdef wxCHECK_VERSION(2, 9, 1)
+		currentFile = fd.GetPath().ToStdString();
 #else
-		 //currentFile = fd.GetPath().ToAscii();
 		const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fd.GetPath());
 		currentFile = tmp_buf;
 #endif
@@ -825,8 +813,7 @@ void MainWindow::onMenuEditUndo(wxCommandEvent &event) {
 
 	// std::cout << "Undo Pressed" << std::endl;
 	if (program->undo()) {
-		wxPaintEvent e;
-		onPaint(e);
+		refreshThings();
 		setDirty();
 	}
 }
@@ -837,8 +824,7 @@ void MainWindow::onMenuEditRedo(wxCommandEvent &event) {
 	}
 
 	if (program->redo()) {
-		wxPaintEvent e;
-		onPaint(e);
+		refreshThings();
 		setDirty();
 	}
 }
@@ -871,8 +857,7 @@ void MainWindow::onMenuEditReset(wxCommandEvent &event) {
 	currentFile = "";
 	fileName = "New (unsaved) map";
 
-	wxPaintEvent ev;
-	onPaint(ev);
+	refreshThings();
 }
 
 void MainWindow::onMenuEditResetPlayers(wxCommandEvent &event) {
@@ -912,16 +897,12 @@ void MainWindow::onMenuEditResize(wxCommandEvent &event) {
 	SimpleDialog simpleDialog;
 	simpleDialog.addValue("Width", intToStr(program->getMap()->getW()),"(must be 16,32,64,128,256,512...)");
 	simpleDialog.addValue("Height", intToStr(program->getMap()->getH()),"(must be 16,32,64,128,256,512...)");
-	simpleDialog.addValue("Surface", "1","(surface material for new area around map)");
-	simpleDialog.addValue("Altitude", "10","(surface height for new area around map)");
-	if (!simpleDialog.show("Resize - expand around, shrink to topleft")) return;
+    if (!simpleDialog.show("Resize")) return;
 
 	try {
 		program->resize(
 			strToInt(simpleDialog.getValue("Width")),
-			strToInt(simpleDialog.getValue("Height")),
-			strToInt(simpleDialog.getValue("Altitude")),
-			strToInt(simpleDialog.getValue("Surface")));
+            strToInt(simpleDialog.getValue("Height")));
 	}
 	catch (const exception &e) {
 		MsgDialog(this, ToUnicode(e.what()), wxT("Exception"), wxOK | wxICON_ERROR).ShowModal();
@@ -1066,6 +1047,85 @@ void MainWindow::onMenuEditRandomizeHeights(wxCommandEvent &event) {
 	}
 }
 
+void MainWindow::onMenuEditImportHeights(wxCommandEvent &event) {
+    if(program == NULL) {
+        return;
+    }
+    try {
+        fileDialog->SetMessage(wxT("Select heigthmap image to load"));
+        fileDialog->SetWildcard(wxT("All Images|*.bmp;*.png;*.jpg;*.jpeg;*.gif;.*.tga;*.tiff;*.tif|PNG-Image (*.png)|*.png|JPEG-Image (*.jpg, *.jpeg)|*.jpg;*.jpeg|BMP-Image (*.bmp)|*.bmp|GIF-Image (*.gif)|*.gif|TIFF-Image (*.tif, *.tiff)|*.tiff;*.tif"));
+        wxString savedDir=fileDialog->GetDirectory();
+        fileDialog->SetDirectory(heightMapDirectory);
+        if (fileDialog->ShowModal() == wxID_OK) {
+#ifdef wxCHECK_VERSION(2, 9, 1)
+            currentFile = fileDialog->GetPath().ToStdString();
+#else
+            const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fileDialog->GetPath());
+            currentFile = tmp_buf;
+#endif
+
+            wxImage* img=new wxImage(currentFile);
+            if(img != NULL) {
+                wxImage grey_img = img->ConvertToGreyscale();
+                delete img;
+                int w =grey_img.GetWidth();
+                int h =grey_img.GetHeight();
+                int map_w = program->getMap()->getW();
+                int map_h = program->getMap()->getH();
+                program->setUndoPoint(ctAll);
+                if(w != map_w && h != map_h) {
+                        grey_img.Rescale(map_w,map_h,wxIMAGE_QUALITY_HIGH);
+                }
+                program->importMapHeights(grey_img.GetData());
+                setDirty();
+            }
+        }
+
+        heightMapDirectory=fileDialog->GetDirectory();
+        fileDialog->SetDirectory(savedDir);
+    }
+    catch (const string &e) {
+        MsgDialog(this, ToUnicode(e), wxT("Exception"), wxOK | wxICON_ERROR).ShowModal();
+    }
+    catch (const exception &e) {
+        MsgDialog(this, ToUnicode(e.what()), wxT("Exception"), wxOK | wxICON_ERROR).ShowModal();
+    }
+}
+
+void MainWindow::onMenuEditExportHeights(wxCommandEvent &event) {
+    if(program == NULL) {
+        return;
+    }
+#if wxCHECK_VERSION(2, 9, 1)
+    wxFileDialog fd(this, wxT("Select file"), wxT(""), wxT(""), wxT("All Images|*.bmp;*.png;*.jpg;*.jpeg;*.gif;.*.tga;*.tiff;*.tif|PNG-Image (*.png)|*.png|JPEG-Image (*.jpg, *.jpeg)|*.jpg;*.jpeg|BMP-Image (*.bmp)|*.bmp|GIF-Image (*.gif)|*.gif|TIFF-Image (*.tif, *.tiff)|*.tiff;*.tif"), wxFD_SAVE);
+#else
+    wxFileDialog fd(this, wxT("Select file"), wxT(""), wxT(""), wxT("All Images|*.bmp;*.png;*.jpg;*.jpeg;*.gif;.*.tga;*.tiff;*.tif|PNG-Image (*.png)|*.png|JPEG-Image (*.jpg, *.jpeg)|*.jpg;*.jpeg|BMP-Image (*.bmp)|*.bmp|GIF-Image (*.gif)|*.gif|TIFF-Image (*.tif, *.tiff)|*.tiff;*.tif"), wxSAVE);
+#endif
+    fd.SetDirectory(heightMapDirectory);
+    if (fd.ShowModal() == wxID_OK) {
+#if wxCHECK_VERSION(2, 9, 1)
+        currentFile = fd.GetPath().ToStdString();
+#else
+        const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fd.GetPath());
+        currentFile = tmp_buf;
+#endif
+        int map_w = program->getMap()->getW();
+        int map_h = program->getMap()->getH();
+        wxImage img(map_w, map_h);
+        unsigned char* img_data = img.GetData();
+        for(int i = 0; i < map_w; i++) {
+            for(int j = 0; j < map_h; j++) {
+                //cells[i][j].height=(data[(i+j*w)*3]*(MAX_MAP_CELL_HEIGHT-MIN_MAP_CELL_HEIGHT)/255)+MIN_MAP_CELL_HEIGHT;
+                img_data[(i+j*map_w)*3] = (unsigned char) ((program->getMap()->getHeight(i,j)-MIN_MAP_CELL_HEIGHT)*255/(MAX_MAP_CELL_HEIGHT-MIN_MAP_CELL_HEIGHT)+0.5);
+                img_data[(i+j*map_w)*3+1] = (unsigned char) ((program->getMap()->getHeight(i,j)-MIN_MAP_CELL_HEIGHT)*255/(MAX_MAP_CELL_HEIGHT-MIN_MAP_CELL_HEIGHT)+0.5);
+                img_data[(i+j*map_w)*3+2] = (unsigned char) ((program->getMap()->getHeight(i,j)-MIN_MAP_CELL_HEIGHT)*255/(MAX_MAP_CELL_HEIGHT-MIN_MAP_CELL_HEIGHT)+0.5);
+            }
+        }
+        img.SaveFile(currentFile);
+    }
+    heightMapDirectory=fd.GetDirectory();
+}
+
 void MainWindow::onMenuEditRandomize(wxCommandEvent &event) {
 	if(program == NULL) {
 		return;
@@ -1150,8 +1210,7 @@ void MainWindow::onMenuViewResetZoomAndPos(wxCommandEvent &event) {
 	}
 
 	program->resetOfset();
-	wxPaintEvent e;
-	onPaint(e);
+	refreshThings();
 }
 
 void MainWindow::onMenuViewGrid(wxCommandEvent &event) {
@@ -1160,8 +1219,7 @@ void MainWindow::onMenuViewGrid(wxCommandEvent &event) {
 	}
 
 	menuView->Check(miViewGrid, program->setGridOnOff());    // miViewGrid event.GetId()
-	wxPaintEvent e;
-	onPaint(e);
+	refreshThings();
 }
 
 
@@ -1171,8 +1229,7 @@ void MainWindow::onMenuViewHeightMap(wxCommandEvent &event) {
 	}
 
 	menuView->Check(miViewHeightMap, program->setHeightMapOnOff());    // miViewGrid event.GetId()
-	wxPaintEvent e;
-	onPaint(e);
+	refreshThings();
 }
 void MainWindow::onMenuHideWater(wxCommandEvent &event) {
 	if(program == NULL) {
@@ -1180,13 +1237,12 @@ void MainWindow::onMenuHideWater(wxCommandEvent &event) {
 	}
 
 	menuView->Check(miHideWater, program->setHideWaterOnOff());    // miViewGrid event.GetId()
-	wxPaintEvent e;
-	onPaint(e);
+	refreshThings();
 }
 void MainWindow::onMenuViewAbout(wxCommandEvent &event) {
 	MsgDialog(
 		this,
-		wxT("\n    Glest Map Editor\n    Copyright 2004-2010 The Glest Team\n    Copyright 2010-2017 The MegaGlest Team    \n"),
+        wxT("\n    Glest Map Editor\n    Copyright 2004-2010 The Glest Team\n    Copyright 2010-2021 The MegaGlest Team    \n"),
 		wxT("About")).ShowModal();
 }
 
@@ -1196,6 +1252,7 @@ void MainWindow::onMenuViewHelp(wxCommandEvent &event) {
 You can change brush in the same category with key 1-9\n\
 and change category with their first letter (keys S, R, O, G, H)\n\
 Press Space to set brush to the resource or object under the mouse cursor\n\
+Hold Shift to fill only empty spaces with the current object or resource\ninstead of replacing everything under the brush.\n\
 To center things in the map shift it with Shift-Up/Down/Left/Right keys\n\
 Height tool (blue) builds with integer height steps 0-20, \nwhile Gradient tool (red) uses any real number \n\
 Units can go over water as long as it is less than 1.5 deep\n\n\
@@ -1292,10 +1349,10 @@ void MainWindow::change(int x, int y) {
 		program->changeMapSurface(x, y, surface, radius);
 		break;
 	case ctObject:
-		program->changeMapObject(x, y, object, radius);
+        program->changeMapObject(x, y, object, radius, !shiftModifierKey);
 		break;
 	case ctResource:
-		program->changeMapResource(x, y, resource, radius);
+        program->changeMapResource(x, y, resource, radius, !shiftModifierKey);
 		break;
 	case ctLocation:
 		program->changeStartLocation(x, y, startLocation - 1);
@@ -1333,7 +1390,7 @@ void MainWindow::uncheckRadius() {
 	}
 }
 
- void MainWindow::onKeyDown(wxKeyEvent &e) {
+void MainWindow::onKeyDown(wxKeyEvent &e) {
 	if(program == NULL) {
 		return;
 	}
@@ -1426,9 +1483,27 @@ void MainWindow::uncheckRadius() {
  	    program->setUndoPoint(ctAll);
  	    program->shiftDown();
  		setDirty();
- 	} else {
+    } else if (e.GetModifiers() == wxMOD_SHIFT) {
+        shiftModifierKey = true;
+        SetStatusText(wxT("Type: Fill"), siBRUSH_OVERWRITE);
+    } else {
  		e.Skip();
 	}
+}
+
+void MainWindow::onKeyUp(wxKeyEvent &e) {
+    if(program == NULL) {
+        return;
+    }
+
+    if(e.GetModifiers() == wxMOD_CONTROL || e.GetModifiers() == wxMOD_ALT){
+        e.Skip();
+    }
+    // WARNING: don't add any Ctrl or ALt key shortcuts below those are reserved for internal menu use.
+    if (e.GetModifiers() != wxMOD_SHIFT) {
+            shiftModifierKey = false;
+            SetStatusText(wxT("Type: Overwrite"), siBRUSH_OVERWRITE);
+    }
 }
 
 BEGIN_EVENT_TABLE(MainWindow, wxFrame)
@@ -1463,6 +1538,8 @@ BEGIN_EVENT_TABLE(MainWindow, wxFrame)
 	EVT_MENU(miEditRotatecopyCorner, MainWindow::onMenuEditRotatecopyCorner)
 
 	EVT_MENU(miEditRandomizeHeights, MainWindow::onMenuEditRandomizeHeights)
+    EVT_MENU(miEditImportHeights, MainWindow::onMenuEditImportHeights)
+    EVT_MENU(miEditExportHeights, MainWindow::onMenuEditExportHeights)
 	EVT_MENU(miEditRandomize, MainWindow::onMenuEditRandomize)
 	EVT_MENU(miEditSwitchSurfaces, MainWindow::onMenuEditSwitchSurfaces)
 	EVT_MENU(miEditInfo, MainWindow::onMenuEditInfo)
@@ -1510,8 +1587,6 @@ GlCanvas::~GlCanvas() {
 }
 
 void GlCanvas::setCurrentGLContext() {
-#ifndef __APPLE__
-
 #if wxCHECK_VERSION(2, 9, 1)
 	if(this->context == NULL) {
 		this->context = new wxGLContext(this);
@@ -1521,9 +1596,6 @@ void GlCanvas::setCurrentGLContext() {
 	if(this->context) {
 		this->SetCurrent(*this->context);
 	}
-#else
-        this->SetCurrent();
-#endif
 }
 
 void translateCoords(wxWindow *wnd, int &x, int &y) {
@@ -1564,6 +1636,11 @@ void GlCanvas::onKeyDown(wxKeyEvent &event) {
 	mainWindow->onKeyDown(event);
 }
 
+void GlCanvas::onKeyUp(wxKeyEvent &event) {
+    mainWindow->onKeyUp(event);
+}
+
+
 void GlCanvas::onPaint(wxPaintEvent &event) {
 //	wxPaintDC dc(this); //N "In a paint event handler must always create a wxPaintDC object even if you do not use it.  (?)
 //    mainWindow->program->renderMap(GetClientSize().x, GetClientSize().y);
@@ -1575,6 +1652,7 @@ void GlCanvas::onPaint(wxPaintEvent &event) {
 
 BEGIN_EVENT_TABLE(GlCanvas, wxGLCanvas)
 	EVT_KEY_DOWN(GlCanvas::onKeyDown)
+    EVT_KEY_UP(GlCanvas::onKeyUp)
     EVT_MOUSEWHEEL(GlCanvas::onMouseWheel)
 	EVT_LEFT_DOWN(GlCanvas::onMouseDown)
 	EVT_MOTION(GlCanvas::onMouseMove)
@@ -1621,12 +1699,7 @@ bool SimpleDialog::show(const string &title, bool wide) {
 	if(m_returnCode==wxID_CANCEL) return false; // don't change values if canceled
 
 	for (unsigned int i = 0; i < texts.size(); ++i) {
-#ifdef WIN32
-		const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(wxFNCONV(texts[i]->GetValue()));
-		values[i].second = tmp_buf;
-#else
 		values[i].second = texts[i]->GetValue().ToAscii();
-#endif
 	}
 	return true;
 }
@@ -1643,20 +1716,24 @@ bool App::OnInit() {
 	string fileparam;
 	if(argc==2){
 		if(argv[1][0]=='-') {   // any flag gives help and exits program.
-			std::cout << "MegaGlest map editor " << mapeditorVersionString << " [Using " << (const char *)wxConvCurrent->cWX2MB(wxVERSION_STRING) << "]" << std::endl << std::endl;
-			std::cout << "glest_map_editor [MGM FILE]" << std::endl << std::endl;
-			std::cout << "Creates or edits glest/megaglest maps."  << std::endl;
-			std::cout << "Draw with left mouse button"  << std::endl;
-			std::cout << "Move map with right mouse button"  << std::endl;
-			std::cout << "Zoom with middle mouse button or mousewheel"  << std::endl;
+			std::cout << std::endl << "MegaGlest map editor " << mapeditorVersionString << " [Using " << (const char *)wxConvCurrent->cWX2MB(wxVERSION_STRING) << "]" << std::endl << std::endl;
+			//std::cout << "\nglest_map_editor [MGM FILE]" << std::endl << std::endl;
+			std::cout << "Creates or edits megaglest/glest maps. [.mgm/.gbm]" << std::endl << std::endl;
+			std::cout << "Draw with left mouse button."  << std::endl;
+			std::cout << "Move map with right mouse button."  << std::endl;
+			std::cout << "Zoom with middle mouse button or mousewheel."  << std::endl;
 
 //			std::cout << " ~ more helps should be written here ~"  << std::endl;
 			std::cout << std::endl;
 			exit (0);
 		}
 //#if defined(__MINGW32__)
+#if wxCHECK_VERSION(2, 9, 1)
+		fileparam = argv[1].ToStdString();
+#else
 		const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(argv[1]);
 		fileparam = tmp_buf;
+#endif
 
 #ifdef WIN32
 		auto_ptr<wchar_t> wstr(Ansi2WideString(fileparam.c_str()));
@@ -1678,14 +1755,8 @@ bool App::OnInit() {
     //exe_path += path_separator;
 
 	string appPath;
-//#if defined(__MINGW32__)
-
-#ifdef WIN32
-	const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(wxFNCONV(exe_path));
-	appPath = tmp_buf;
-
-	auto_ptr<wchar_t> wstr(Ansi2WideString(appPath.c_str()));
-	appPath = utf8_encode(wstr.get());
+#ifdef wxCHECK_VERSION(2, 9, 1)
+	appPath = exe_path.ToStdString();
 #else
 	appPath = wxFNCONV(exe_path);
 #endif

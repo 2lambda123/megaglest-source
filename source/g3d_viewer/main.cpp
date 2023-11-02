@@ -37,6 +37,12 @@
   #define _strnicmp strncasecmp
 #endif
 
+#if wxCHECK_VERSION(2, 9, 1)
+	#define WX2CHR(x) (x.mb_str())
+#else
+	#define WX2CHR(x) (wxConvCurrent->cWX2MB(x))
+#endif
+
 using namespace Shared::Platform;
 using namespace Shared::PlatformCommon;
 using namespace Shared::Graphics;
@@ -56,14 +62,14 @@ const char *folderDelimiter = "/";
 //int GameConstants::updateFps= 40;
 //int GameConstants::cameraFps= 100;
 
-const string g3dviewerVersionString= "v3.13.0";
+const string g3dviewerVersionString= "v3.13-dev";
 
 // Because g3d should always support alpha transparency
 string fileFormat = "png";
 
 namespace Glest { namespace Game {
 
-string getGameReadWritePath(string lookupKey) {
+string getGameReadWritePath(const string &lookupKey) {
 	string path = "";
     if(path == "" && getenv("GLESTHOME") != NULL) {
         path = safeCharPtrCopy(getenv("GLESTHOME"),8096);
@@ -159,102 +165,108 @@ void printParameterHelp(const char *argv0, bool foundInvalidArgs) {
 			printf("\n");
 	}
 
-	//     "================================================================================"
-	printf("\n%s %s, [Using %s] usage:\n",extractFileFromDirectoryPath(argv0).c_str(),g3dviewerVersionString.c_str(),(const char *)wxConvCurrent->cWX2MB(wxVERSION_STRING));
+	//         "================================================================================"
+	printf("\n%s %s, [Using %s]\n",extractFileFromDirectoryPath(argv0).c_str(),g3dviewerVersionString.c_str(),(const char *)wxConvCurrent->cWX2MB(wxVERSION_STRING));
 
-	printf("\n%s [G3D FILE]\n\n",extractFileFromDirectoryPath(argv0).c_str());
-	printf("Displays glest 3D-models and unit/projectile/splash particle systems.\n");
-	printf("rotate with left mouse button, zoom with right mouse button or mousewheel.\n");
-	printf("Use ctrl to load more than one particle system.\n");
-	printf("Press R to restart particles, this also reloads all files if they are changed.\n\n");
+	printf("\nDisplays glest 3D-models and unit/projectile/splash particle systems.\n");
+	printf("\nRotate with left mouse button. Zoom with right mouse button or mousewheel.");
+	printf("\nUse ctrl to load more than one particle system.");
+	printf("\nPress R to restart particles, this also reloads all files if they are changed.");
 
-	printf("optionally you may use any of the following:\n");
-	printf("Parameter:\t\t\tDescription:");
-	printf("\n----------------------\t\t------------");
-	printf("\n%s\t\t\t\tdisplays this help text.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_HELP]));
+	//printf("\n\noptionally you may use any of the following:\n");
+	printf("\n\n%s [G3D FILE], usage",extractFileFromDirectoryPath(argv0).c_str());
+	printf("\n\nCommandline Parameter:  Description:");
+	printf("\n\n- - - - - - - - - - -   - - - - - - - - - - - - - - - - - - - - - - - -");
+	printf("\n\n%s  \t\tDisplays this help text.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_HELP]));
 
-	//     "================================================================================"
-	printf("\n%s=x",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_UNIT]));
-	printf("\n                     \t\tAuto load the unit / skill information specified");
-	printf("\n                     \t\tin path/filename x");
-	printf("\n                     \t\tWhere x is a g3d filename to load separated with a");
-	printf("\n                     \t\tcomma and one or more skill names to try loading:");
-	printf("\n                     \t\texample:");
-	printf("\n %s\n %s=techs/megapack/factions/tech/units/battle_machine,attack_skill,stop_skill",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_UNIT]));
+	//         "================================================================================"
+	printf("\n\n%s=x  \t\tAuto load the unit / skill information specified",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_UNIT]));
+	printf("\n\n                     \tin path/filename x.");
+	printf("\n\n                     \tWhere x is a g3d filename to load separated with a");
+	printf("\n\n                     \tcomma and one or more skill names to try loading.");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=techs/megapack/factions/",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_UNIT]));
+	printf("\n\n                     \ttech/units/battle_machine,attack_skill,stop_skill");
 
-	printf("\n%s=x\t\t\tAuto load the model specified in path/filename x",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL]));
-	printf("\n                     \t\tWhere x is a g3d filename to load:");
-	printf("\n                     \t\texample:");
-	printf("\n %s\n %s=techs/megapack/factions/tech/units/battle_machine/models/battle_machine_dying.g3d",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL]));
+	printf("\n\n%s=x  \tAuto load the model specified in path/filename x.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL]));
+	printf("\n\n                     \tWhere x is a g3d filename to load.");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=techs/megapack/factions/",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL]));
+	printf("\n\n                     \ttech/units/battle_machine/models/battle_machine_dying.g3d");
 
-	printf("\n%s=x\tAnimation value when loading a model",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL_ANIMATION_VALUE]));
-	printf("\n                     \t\tWhere x is a decimal value from -1.0 to 1.0:");
-	printf("\n                     \t\texample:");
-	printf("\n %s %s=0.5",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL_ANIMATION_VALUE]));
+	printf("\n\n%s=x  ",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL_ANIMATION_VALUE]));
+	printf("\n\n                     \tAnimation value when loading a model.");
+	printf("\n\n                     \tWhere x is a decimal value from -1.0 to 1.0");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=0.5",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL_ANIMATION_VALUE]));
 
-	//     "================================================================================"
-	printf("\n%s=x",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_AUTO_SCREENSHOT]));
-	printf("\n                     \t\tAutomatically takes a screenshot of the items you");
-	printf("\n                     \t\tare loading.");
-	printf("\n                     \t\tWhere x is a comma-delimited list of one or more");
-	printf("\n                     \t\t        of the optional settings:");
-	printf("\n                     \t\ttransparent, enable_grid, enable_wireframe,");
-	printf("\n                     \t\tenable_normals, disable_grid, disable_wireframe,");
-	printf("\n                     \t\tdisable_normals, saveas-<filename>, resize-wxh");
-	printf("\n                     \t\texample:");
-	printf("\n %s\n %s=transparent,disable_grid,saveas-test.png,resize-800x600\n %s=techs/megapack/factions/tech/units/battle_machine/models/battle_machine_dying.g3d",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_AUTO_SCREENSHOT]),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL]));
+	//         "================================================================================"
+	printf("\n\n%s=x  \tAutomatically takes a screenshot of the items you",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_AUTO_SCREENSHOT]));
+	printf("\n\n                     \tare loading.");
+	printf("\n\n                     \tWhere x is a comma-delimited list of one or more");
+	printf("\n\n                     \t    of the optional settings:");
+	printf("\n\n                     \t    transparent, enable_grid, enable_wireframe,");
+	printf("\n\n                     \t    enable_normals, disable_grid, disable_wireframe,");
+	printf("\n\n                     \t    disable_normals, saveas-<filename>, resize-wxh");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=transparent,",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_AUTO_SCREENSHOT]));
+	printf("\n\n                     \tdisable_grid,saveas-test.png,resize-800x600");
+	printf("\n\n                     \t%s=techs/megapack/factions/tech/units/",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_MODEL]));
+	printf("\n\n                     \tbattle_machine/models/battle_machine_dying.g3d");
 
-	//     "================================================================================"
-	printf("\n%s=x",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE]));
-	printf("\n                     \t\tAuto load the particle specified in path/filename x");
-	printf("\n                     \t\tWhere x is a Particle XML filename to load:");
-	printf("\n                     \t\texample:");
-	printf("\n %s\n %s=techs/megapack/factions/persian/units/genie/glow_particles.xml",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE]));
+	//         "================================================================================"
+	printf("\n\n%s=x  \tAuto load the particle specified in path/filename x.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE]));
+	printf("\n\n                     \tWhere x is a Particle XML filename to load.");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=techs/megapack/factions/",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE]));
+	printf("\n\n                     \tpersian/units/genie/glow_particles.xml");
 
-	printf("\n%s=x",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_PROJECTILE]));
-	printf("\n                     \t\tAuto load the projectile particle specified in");
-	printf("\n                     \t\tpath/filename x");
-	printf("\n                     \t\tWhere x is a Projectile Particle Definition XML");
-	printf("\n                     \t\t        filename to load:");
-	printf("\n                     \t\texample:");
-	printf("\n %s\n %s=techs/megapack/factions/persian/units/genie/particle_proj.xml",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_PROJECTILE]));
+	printf("\n\n%s=x  ",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_PROJECTILE]));
+	printf("\n\n                     \tAuto load the projectile particle specified in");
+	printf("\n\n                     \tpath/filename x.");
+	printf("\n\n                     \tWhere x is a Projectile Particle Definition XML");
+	printf("\n\n                     \t    filename to load.");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=techs/megapack/",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_PROJECTILE]));
+	printf("\n\n                     \tfactions/persian/units/genie/particle_proj.xml");
 
-	printf("\n%s=x",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_SPLASH]));
-	printf("\n                     \t\tAuto load the splash particle specified in");
-	printf("\n                     \t\tpath/filename x");
-	printf("\n                     \t\tWhere x is a Splash Particle Definition XML");
-	printf("\n                     \t\t        filename to load:");
-	printf("\n                     \t\texample:");
-	printf("\n %s\n %s=techs/megapack/factions/persian/units/genie/particle_splash.xml",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_SPLASH]));
+	printf("\n\n%s=x  ",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_SPLASH]));
+	printf("\n\n                     \tAuto load the splash particle specified in");
+	printf("\n\n                     \tpath/filename x.");
+	printf("\n\n                     \tWhere x is a Splash Particle Definition XML");
+	printf("\n\n                     \t    filename to load.");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=techs/megapack/",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_SPLASH]));
+	printf("\n\n                     \tfactions/persian/units/genie/particle_splash.xml");
 
-	printf("\n%s=x",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_LOOP_VALUE]));
-	printf("\n                     \t\tParticle loop value when loading one or more");
-	printf("\n                     \t\tparticles");
-	printf("\n                     \t\tWhere x is an integer value from 1 to particle count:");
-	printf("\n                     \t\texample:");
-	printf("\n %s %s=25",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_LOOP_VALUE]));
+	printf("\n\n%s=x  ",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_LOOP_VALUE]));
+	printf("\n\n                     \tParticle loop value when loading one or more");
+	printf("\n\n                     \tparticles.");
+	printf("\n\n                     \tWhere x is an integer value from 1 to particle count.");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=25",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_LOAD_PARTICLE_LOOP_VALUE]));
 
-	printf("\n%s=x\t\t\tZoom value when loading a model",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ZOOM_VALUE]));
-	printf("\n                     \t\tWhere x is a decimal value from 0.1 to 10.0:");
-	printf("\n                     \t\texample:");
-	printf("\n %s %s=4.2",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ZOOM_VALUE]));
+	printf("\n\n%s=x  \tZoom value when loading a model.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ZOOM_VALUE]));
+	printf("\n\n                     \tWhere x is a decimal value from 0.1 to 10.0");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=4.2",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ZOOM_VALUE]));
 
-	printf("\n%s=x\t\tX Coordinate Rotation value when loading a model",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_X_VALUE]));
-	printf("\n                     \t\tWhere x is a decimal value from -10.0 to 10.0:");
-	printf("\n                     \t\texample:");
-	printf("\n %s %s=2.2",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_X_VALUE]));
+	printf("\n\n%s=x  \tX Coordinate Rotation value when loading a model.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_X_VALUE]));
+	printf("\n\n                     \tWhere x is a decimal value from -10.0 to 10.0");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=2.2",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_X_VALUE]));
 
-	printf("\n%s=x\t\tY Coordinate Rotation value when loading a model",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_Y_VALUE]));
-	printf("\n                     \t\tWhere x is a decimal value from -10.0 to 10.0:");
-	printf("\n                     \t\texample:");
-	printf("\n %s %s=2.2",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_Y_VALUE]));
+	printf("\n\n%s=x  \tY Coordinate Rotation value when loading a model.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_Y_VALUE]));
+	printf("\n\n                     \tWhere x is a decimal value from -10.0 to 10.0");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=2.2",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_ROTATE_Y_VALUE]));
 
-	printf("\n%s=x\t\tSpecify which image format to use for screenshots.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_SCREENSHOT_FORMAT]));
-	printf("\n                     \t\tWhere x is one of the following supported formats");
-	printf("\n                     \t\tpng,jpg,tga,bmp");
-	printf("\n                     \t\t*NOTE: png is the default (and supports transparency)");
-	printf("\n                     \t\texample:");
-	printf("\n %s %s=jpg",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_SCREENSHOT_FORMAT]));
+	printf("\n\n%s=x  \tSpecify which image format to use for screenshots.",(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_SCREENSHOT_FORMAT]));
+	printf("\n\n                     \tWhere x is one of the following supported formats:");
+	printf("\n\n                     \t    png,jpg,tga,bmp");
+	printf("\n\n                     \t*NOTE: png is the default (and supports transparency)");
+	printf("\n\n                     \texample:");
+	printf("\n\n                     \t%s %s=jpg",extractFileFromDirectoryPath(argv0).c_str(),(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_SCREENSHOT_FORMAT]));
 
 	printf("\n\n");
 }
@@ -296,6 +308,13 @@ MainWindow::MainWindow(	std::pair<string,vector<string> > unitToLoad,
 {
 	this->appPath = appPath;
 	Properties::setApplicationPath(executable_path(appPath));
+
+#ifndef NO_APPIMAGE
+	Properties::setAppDirPath();
+#ifdef APPIMAGE_NODATA
+	Properties::setAppimageDirPath();
+#endif
+#endif
 
 	lastanim = 0;
 	model= NULL;
@@ -552,8 +571,7 @@ void MainWindow::setupStartupSettings() {
 	}
 	renderer->init();
 
-	wxCommandEvent event;
-	onMenuRestart(event);
+	onMenuRestartNoEvent();
 }
 
 MainWindow::~MainWindow(){
@@ -579,7 +597,7 @@ MainWindow::~MainWindow(){
 
 void MainWindow::initGlCanvas(){
 	if(glCanvas == NULL) {
-		int args[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER,  WX_GL_MIN_ALPHA,  8  }; // to prevent flicker
+		int args[] = { WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_MIN_ALPHA, 8, 0 }; // to prevent flicker
 		glCanvas = new GlCanvas(this, args);
 	}
 }
@@ -598,10 +616,14 @@ void MainWindow::init() {
 
 void MainWindow::onPaint(wxPaintEvent &event) {
 	if(!IsShown()) {
-		event.Skip();
-		return;
-	}
-	
+			event.Skip();
+			return;
+		}
+
+	onPaintNoEvent( );
+}
+
+void MainWindow::onPaintNoEvent( ) {
 	bool isFirstWindowShownEvent = !startupSettingsInited ;
 	if(startupSettingsInited == false) {
 		startupSettingsInited = true;
@@ -700,7 +722,6 @@ void MainWindow::onPaint(wxPaintEvent &event) {
 			resetAnimation 		= false;
 			particleLoopStart 	= resetParticleLoopStart;
 
-			wxCommandEvent event;
 			if(unitPath.first != "") {
 				//onMenuFileClearAll(event);
 
@@ -708,12 +729,8 @@ void MainWindow::onPaint(wxPaintEvent &event) {
 				particlePathList.clear();
 				particleProjectilePathList.clear();
 				particleSplashPathList.clear(); // as above
-
-				onMenuRestart(event);
 			}
-			else {
-				onMenuRestart(event);
-			}
+			onMenuRestartNoEvent();
 		}
 	}
 	else if(modelPathList.empty() == true && haveLoadedParticles) {
@@ -727,8 +744,7 @@ void MainWindow::onPaint(wxPaintEvent &event) {
 			anim				= 0.f;
 			particleLoopStart 	= resetParticleLoopStart;
 
-			wxCommandEvent event;
-			onMenuRestart(event);
+			onMenuRestartNoEvent();
 		}
 	}
 
@@ -784,14 +800,13 @@ void MainWindow::onClose(wxCloseEvent &event){
 // for the mousewheel
 void MainWindow::onMouseWheelDown(wxMouseEvent &event) {
 	try {
-		wxPaintEvent paintEvent;
 		zoom*= 1.1f;
 		zoom= clamp(zoom, 0.1f, 10.0f);
 
 		string statusTextValue = statusbarText + " animation speed: " + floatToStr(speed * 1000.0) + " anim value: " + floatToStr(anim) + " zoom: " + floatToStr(zoom) + " rotX: " + floatToStr(rotX) + " rotY: " + floatToStr(rotY);
 		GetStatusBar()->SetStatusText(ToUnicode(statusTextValue.c_str()));
 
-		onPaint(paintEvent);
+		onPaintNoEvent();
 	}
 	catch(std::runtime_error &e) {
 		std::cout << e.what() << std::endl;
@@ -801,14 +816,13 @@ void MainWindow::onMouseWheelDown(wxMouseEvent &event) {
 
 void MainWindow::onMouseWheelUp(wxMouseEvent &event) {
 	try {
-		wxPaintEvent paintEvent;
 		zoom*= 0.90909f;
 		zoom= clamp(zoom, 0.1f, 10.0f);
 
 		string statusTextValue = statusbarText + " animation speed: " + floatToStr(speed * 1000.0) + " anim value: " + floatToStr(anim) + " zoom: " + floatToStr(zoom) + " rotX: " + floatToStr(rotX) + " rotY: " + floatToStr(rotY);
 		GetStatusBar()->SetStatusText(ToUnicode(statusTextValue.c_str()));
 
-		onPaint(paintEvent);
+		onPaintNoEvent();
 	}
 	catch(std::runtime_error &e) {
 		std::cout << e.what() << std::endl;
@@ -821,7 +835,7 @@ void MainWindow::onMouseMove(wxMouseEvent &event){
 	try {
 		int x= event.GetX();
 		int y= event.GetY();
-		wxPaintEvent paintEvent;
+
 
 		if(event.LeftIsDown()){
 			rotX+= clamp(lastX-x, -10, 10);
@@ -830,7 +844,7 @@ void MainWindow::onMouseMove(wxMouseEvent &event){
 			string statusTextValue = statusbarText + " animation speed: " + floatToStr(speed * 1000.0) + " anim value: " + floatToStr(anim) + " zoom: " + floatToStr(zoom) + " rotX: " + floatToStr(rotX) + " rotY: " + floatToStr(rotY);
 			GetStatusBar()->SetStatusText(ToUnicode(statusTextValue.c_str()));
 
-			onPaint(paintEvent);
+			onPaintNoEvent();
 		}
 		else if(event.RightIsDown()){
 			zoom*= 1.0f+(lastX-x+lastY-y)/100.0f;
@@ -839,7 +853,7 @@ void MainWindow::onMouseMove(wxMouseEvent &event){
 			string statusTextValue = statusbarText + " animation speed: " + floatToStr(speed * 1000.0) + " anim value: " + floatToStr(anim) + " zoom: " + floatToStr(zoom) + " rotX: " + floatToStr(rotX) + " rotY: " + floatToStr(rotY);
 			GetStatusBar()->SetStatusText(ToUnicode(statusTextValue.c_str()));
 
-			onPaint(paintEvent);
+			onPaintNoEvent();
 		}
 
 		lastX= x;
@@ -860,15 +874,7 @@ void MainWindow::onMenuFileLoad(wxCommandEvent &event){
 		if(fileDialog->ShowModal()==wxID_OK){
 			modelPathList.clear();
 			string file;
-#ifdef WIN32
-			const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fileDialog->GetPath());
-			file = tmp_buf;
-
-			auto_ptr<wchar_t> wstr(Ansi2WideString(file.c_str()));
-			file = utf8_encode(wstr.get());
-#else
 			file = (const char*)wxFNCONV(fileDialog->GetPath().c_str());
-#endif
 
 			//loadModel((const char*)wxFNCONV(fileDialog->GetPath().c_str()));
 			loadModel(file);
@@ -896,14 +902,7 @@ void MainWindow::onMenuFileLoadParticleXML(wxCommandEvent &event){
 		if(fileDialog->ShowModal()==wxID_OK){
 			//string path = (const char*)wxFNCONV(fileDialog->GetPath().c_str());
 			string file;
-#ifdef WIN32
-			const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fileDialog->GetPath());
-			file = tmp_buf;
-			auto_ptr<wchar_t> wstr(Ansi2WideString(file.c_str()));
-			file = utf8_encode(wstr.get());
-#else
 			file = (const char*)wxFNCONV(fileDialog->GetPath().c_str());
-#endif
 
 			loadParticle(file);
 		}
@@ -930,14 +929,7 @@ void MainWindow::onMenuFileLoadProjectileParticleXML(wxCommandEvent &event){
 		if(fileDialog->ShowModal()==wxID_OK){
 			//string path = (const char*)wxFNCONV(fileDialog->GetPath().c_str());
 			string file;
-#ifdef WIN32
-			const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fileDialog->GetPath());
-			file = tmp_buf;
-			auto_ptr<wchar_t> wstr(Ansi2WideString(file.c_str()));
-			file = utf8_encode(wstr.get());
-#else
 			file = (const char*)wxFNCONV(fileDialog->GetPath().c_str());
-#endif
 
 			loadProjectileParticle(file);
 		}
@@ -964,15 +956,7 @@ void MainWindow::onMenuFileLoadSplashParticleXML(wxCommandEvent &event){
 		if(fileDialog->ShowModal()==wxID_OK){
 			//string path = (const char*)wxFNCONV(fileDialog->GetPath().c_str());
 			string file;
-#ifdef WIN32
-			const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(fileDialog->GetPath());
-			file = tmp_buf;
-
-			auto_ptr<wchar_t> wstr(Ansi2WideString(file.c_str()));
-			file = utf8_encode(wstr.get());
-#else
 			file = (const char*)wxFNCONV(fileDialog->GetPath().c_str());
-#endif
 
 			loadSplashParticle(file);
 		}
@@ -1856,8 +1840,8 @@ void MainWindow::onTimer(wxTimerEvent &event) {
 		anim -= 1.f;
 		resetAnimation = true;
 	}
-	wxPaintEvent paintEvent;
-	onPaint(paintEvent);
+
+	onPaintNoEvent();
 }
 
 string MainWindow::getModelInfo() {
@@ -1950,6 +1934,10 @@ void MainWindow::onKeyDown(wxKeyEvent &e) {
 }
 
 void MainWindow::onMenuRestart(wxCommandEvent &event) {
+	onMenuRestartNoEvent();
+}
+
+void MainWindow::onMenuRestartNoEvent() {
 	try {
 		// std::cout << "pressed R (restart particle animation)" << std::endl;
 		if(timer) timer->Stop();
@@ -2045,8 +2033,6 @@ GlCanvas::~GlCanvas() {
 }
 
 void GlCanvas::setCurrentGLContext() {
-#ifndef __APPLE__
-
 #if wxCHECK_VERSION(3, 0, 0)
 	//printf("Setting glcontext 3x!\n");
 
@@ -2070,9 +2056,6 @@ void GlCanvas::setCurrentGLContext() {
 		wxGLCanvas::SetCurrent(*this->context);
 		//printf("Set ctx2 [%p]\n",this->context);
 	}
-#else
-	this->SetCurrent();
-#endif
 }
 
 // for the mousewheel
@@ -2130,8 +2113,12 @@ bool App::OnInit() {
 	bool foundInvalidArgs = false;
 	const int knownArgCount = sizeof(GAME_ARGS) / sizeof(GAME_ARGS[0]);
 	for(int idx = 1; idx < argc; ++idx) {
+#if wxCHECK_VERSION(2, 9, 1)
+		const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(argv[idx].wc_str());
+#else
 		const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(argv[idx]);
-		if( hasCommandArgument(knownArgCount, (wxChar**)&GAME_ARGS[0], (const char *)tmp_buf, NULL, 0, true) == false &&
+#endif
+if( hasCommandArgument(knownArgCount, (wxChar**)&GAME_ARGS[0], (const char *)tmp_buf, NULL, 0, true) == false &&
 			argv[idx][0] == '-') {
 			foundInvalidArgs = true;
 
@@ -2141,7 +2128,7 @@ bool App::OnInit() {
 
     if(foundInvalidArgs == true ||
     	hasCommandArgument(argc, argv,(const char *)wxConvCurrent->cWX2MB(GAME_ARGS[GAME_ARG_HELP])) == true) {
-    	printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),foundInvalidArgs);
+		printParameterHelp(static_cast<const char*>(WX2CHR(argv[0])), foundInvalidArgs);
 		return false;
     }
 
@@ -2161,7 +2148,11 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
+#if wxCHECK_VERSION(2, 9, 1)
+		string options = argv[foundParamIndIndex].ToStdString();
+#else
         string options = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+#endif
         vector<string> paramPartTokens;
         Tokenize(options,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2207,7 +2198,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string customPath = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string customPath = static_cast<const char*>(WX2CHR(argv[foundParamIndIndex]));
         vector<string> paramPartTokens;
         Tokenize(customPath,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2233,15 +2224,15 @@ bool App::OnInit() {
             	}
             }
             else {
-            	printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            	printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+				printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", static_cast<const char*>(WX2CHR(argv[foundParamIndIndex])), (paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+				printParameterHelp(WX2CHR(argv[0]),false);
             	return false;
             }
 
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", static_cast<const char*>(WX2CHR(argv[foundParamIndIndex])),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2257,7 +2248,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string customPath = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string customPath = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(customPath,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2270,8 +2261,8 @@ bool App::OnInit() {
 
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2287,7 +2278,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string customPath = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string customPath = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(customPath,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2299,8 +2290,8 @@ bool App::OnInit() {
 			#endif
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", (const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2315,7 +2306,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string customPath = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string customPath = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(customPath,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2327,8 +2318,8 @@ bool App::OnInit() {
 			#endif
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", (const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2343,7 +2334,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string customPath = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string customPath = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(customPath,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2355,8 +2346,8 @@ bool App::OnInit() {
 			#endif
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", (const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2371,7 +2362,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string value = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string value = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(value,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2379,8 +2370,8 @@ bool App::OnInit() {
         	printf("newAnimValue = %f\n",newAnimValue);
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", (const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2395,7 +2386,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string value = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string value = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(value,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2403,8 +2394,8 @@ bool App::OnInit() {
         	//printf("newParticleLoopValue = %d\n",newParticleLoopValue);
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", (const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2419,7 +2410,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string value = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string value = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(value,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2427,8 +2418,8 @@ bool App::OnInit() {
         	//printf("newAnimValue = %f\n",newAnimValue);
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", (const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2443,7 +2434,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string value = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string value = (const char*)WX2CHR(argv[foundParamIndIndex]);
         vector<string> paramPartTokens;
         Tokenize(value,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2451,8 +2442,8 @@ bool App::OnInit() {
         	//printf("newAnimValue = %f\n",newAnimValue);
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", (const char*)WX2CHR(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2467,7 +2458,7 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string value = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string value = static_cast<const char*>(WX2CHR(argv[foundParamIndIndex]));
         vector<string> paramPartTokens;
         Tokenize(value,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
@@ -2475,8 +2466,8 @@ bool App::OnInit() {
         	//printf("newAnimValue = %f\n",newAnimValue);
         }
         else {
-            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid path specified on commandline [%s] value [%s]\n\n", static_cast<const char*>(WX2CHR(argv[foundParamIndIndex])),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
@@ -2490,35 +2481,21 @@ bool App::OnInit() {
             hasCommandArgument(argc, argv,(const char*)param,&foundParamIndIndex);
         }
         //printf("foundParamIndIndex = %d\n",foundParamIndIndex);
-        string value = (const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]);
+        string value = static_cast<const char*>(WX2CHR(argv[foundParamIndIndex]));
         vector<string> paramPartTokens;
         Tokenize(value,paramPartTokens,"=");
         if(paramPartTokens.size() >= 2 && paramPartTokens[1].length() > 0) {
         	fileFormat = paramPartTokens[1];
         }
         else {
-            printf("\nInvalid value specified on commandline [%s] value [%s]\n\n",(const char *)wxConvCurrent->cWX2MB(argv[foundParamIndIndex]),(paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
-            printParameterHelp(wxConvCurrent->cWX2MB(argv[0]),false);
+            printf("\nInvalid value specified on commandline [%s] value [%s]\n\n", static_cast<const char*>(WX2CHR(argv[foundParamIndIndex])), (paramPartTokens.size() >= 2 ? paramPartTokens[1].c_str() : NULL));
+            printParameterHelp(WX2CHR(argv[0]),false);
             return false;
         }
     }
 
 	if(argc == 2 && argv[1][0] != '-') {
-
-//#if defined(__MINGW32__)
-#ifdef WIN32
-		const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(wxFNCONV(argv[1]));
-		modelPath = tmp_buf;
-		auto_ptr<wchar_t> wstr(Ansi2WideString(modelPath.c_str()));
-		modelPath = utf8_encode(wstr.get());
-#else
-		modelPath = wxFNCONV(argv[1]);
-#endif
-
-//#else
-//        modelPath = wxFNCONV(argv[1]);
-//#endif
-
+		modelPath = static_cast<const char*>(WX2CHR(argv[1]));
 	}
 
 //#if defined(__MINGW32__)
@@ -2533,17 +2510,7 @@ bool App::OnInit() {
     //wxString path_separator = wxFileName::GetPathSeparator();
     //exe_path = exe_path.BeforeLast(path_separator[0]);
     //exe_path += path_separator;
-
-//#if defined(__MINGW32__)
-#ifdef WIN32
-	const wxWX2MBbuf tmp_buf = wxConvCurrent->cWX2MB(wxFNCONV(exe_path));
-	string appPath = tmp_buf;
-
-	auto_ptr<wchar_t> wstr(Ansi2WideString(appPath.c_str()));
-	appPath = utf8_encode(wstr.get());
-#else
-	string appPath(wxFNCONV(exe_path));
-#endif
+	string appPath(static_cast<const char*>(WX2CHR(exe_path)));
 
 //#else
 //		appPath = wxFNCONV(exe_path);

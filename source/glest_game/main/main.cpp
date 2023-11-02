@@ -25,6 +25,9 @@
 #include <string>
 #include <cstdlib>
 
+
+#include "steamshim_child.h"
+#include "steam.h"
 #include "game.h"
 #include "main_menu.h"
 #include "program.h"
@@ -287,7 +290,7 @@ static void cleanupProcessObjects() {
 	CacheManager::cleanupMutexes();
 }
 
-#if defined(WIN32) && !defined(_DEBUG) && !defined(__GNUC__)
+#if defined(WIN32) && !defined(__GNUC__)
 void fatal(const char *s, ...)    // failure exit
 {
     static int errors = 0;
@@ -455,7 +458,7 @@ void generate_stack_trace(string &out, CONTEXT ctx, int skip) {
 }
 
 struct UntypedException {
-  UntypedException(const EXCEPTION_RECORD & er)
+	explicit UntypedException(const EXCEPTION_RECORD & er)
     : exception_object(reinterpret_cast<void *>(er.ExceptionInformation[1])),
       type_array(reinterpret_cast<_ThrowInfo *>(er.ExceptionInformation[2])->pCatchableTypeArray)
   {}
@@ -636,7 +639,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep, bool fatalExit) {
 			printf("\n** Already in error handler aborting, msg [%s]\n",msg);
 			fflush(stdout);
 			abort();
-			return;
+			//return;
 		}
 		inErrorNow = true;
 
@@ -1784,7 +1787,7 @@ void runTilesetValidationForPath(string tilesetPath, string tilesetName,
 		bool showDuplicateFiles, bool gitPurgeFiles,double &purgedMegaBytes) {
 	Checksum checksum;
 
-	bool techtree_errors = false;
+	//bool techtree_errors = false;
 
 	std::map<string,vector<pair<string, string> >  > loadedFileList;
 	vector<string> pathList;
@@ -2110,9 +2113,9 @@ void runTilesetValidationForPath(string tilesetPath, string tilesetName,
 		}
 	}
 
-	if(techtree_errors == false) {
-		printf("\nValidation found NO ERRORS for tilesetPath [%s] tilesetName [%s]:\n",tilesetPath.c_str(), tilesetName.c_str());
-	}
+	//if(techtree_errors == false) {
+	printf("\nValidation found NO ERRORS for tilesetPath [%s] tilesetName [%s]:\n",tilesetPath.c_str(), tilesetName.c_str());
+	//}
 
 	printf("----------------------------------------------------------------");
 }
@@ -3295,6 +3298,49 @@ void ShowINISettings(int argc, char **argv,Config &config,Config &configKeys) {
     }
 }
 
+Steam & initSteamInstance() {
+	Steam *&steamInstance = CacheManager::getCachedItem< Steam *>(GameConstants::steamCacheInstanceKey);
+	if(steamInstance == NULL) {
+		steamInstance = new Steam();
+	}
+	return *steamInstance;
+}
+
+void setupSteamSettings(bool steamEnabled, bool steamResetStats, bool debugEnabled) {
+	Config &config = Config::getInstance();
+	config.setBool("SteamEnabled",steamEnabled,true);
+	if(steamEnabled) {
+		printf("*NOTE: Steam Integration Enabled.\n");
+
+		if(debugEnabled) {
+			printf("*NOTE: Steam Debugging Enabled.\n");
+		}
+		Steam::setDebugEnabled(debugEnabled);
+
+		Steam &steam = initSteamInstance();
+
+		// For Debugging purposes:
+		if(steamResetStats) {
+			printf("*WARNING: Steam Stats / Achievements are being RESET by request!\n");
+			steam.resetStats(true);
+		}
+
+		string steamPlayerName = steam.userName();
+		string steamLang = steam.lang();
+		printf("Steam Integration Enabled!\nSteam User Name is [%s] Language is [%s]\n", steamPlayerName.c_str(), steamLang.c_str());
+
+		bool needToSaveConfig=false;
+		string currentPLayerName = config.getString("NetPlayerName","");
+		if( currentPLayerName == "newbie" || currentPLayerName == "" ) {
+			config.setString("NetPlayerName",steamPlayerName);
+			needToSaveConfig=true;
+		}
+		if( needToSaveConfig == true ) {
+			config.save();
+		}
+	}
+}
+
 void CheckForDuplicateData() {
     Config &config = Config::getInstance();
 
@@ -4155,6 +4201,13 @@ int glestMain(int argc, char** argv) {
 	bool foundInvalidArgs = false;
 	preCacheThread=NULL;
 
+#ifndef NO_APPIMAGE
+	Properties::setAppDirPath();
+#ifdef APPIMAGE_NODATA
+	Properties::setAppimageDirPath();
+#endif
+#endif
+
 	Properties::setApplicationPath(executable_path(argv[0]));
 	Properties::setApplicationDataPath(executable_path(argv[0]));
 	Properties::setGameVersion(glestVersionString);
@@ -4167,7 +4220,12 @@ int glestMain(int argc, char** argv) {
     PlatformExceptionHandler::disableBacktrace= disableBacktrace;
 
 #if defined(CUSTOM_DATA_INSTALL_PATH)
-    if(SystemFlags::VERBOSE_MODE_ENABLED) printf("\n\nCUSTOM_DATA_INSTALL_PATH = [%s]\n\n",formatPath(TOSTRING(CUSTOM_DATA_INSTALL_PATH)).c_str());
+    if(SystemFlags::VERBOSE_MODE_ENABLED) 
+#ifndef NO_APPIMAGE
+		printf("\n\nCUSTOM_DATA_INSTALL_PATH = [%s]\n\n",Properties::appendAppImagePath(formatPath(TOSTRING(CUSTOM_DATA_INSTALL_PATH))).c_str());
+#else
+		printf("\n\nCUSTOM_DATA_INSTALL_PATH = [%s]\n\n",formatPath(TOSTRING(CUSTOM_DATA_INSTALL_PATH)).c_str());
+#endif
 #endif
 
 	const int knownArgCount = sizeof(GAME_ARGS) / sizeof(GAME_ARGS[0]);
@@ -4184,9 +4242,6 @@ int glestMain(int argc, char** argv) {
 		printParameterHelp(argv[0],foundInvalidArgs);
 		return 2;
 	}
-
-
-
 
     if( hasCommandArgument(argc, argv,string(GAME_ARGS[GAME_ARG_MASTERSERVER_MODE])) == true) {
     	//isMasterServerModeEnabled = true;
@@ -4526,6 +4581,10 @@ int glestMain(int argc, char** argv) {
 		Config &config = Config::getInstance();
 		setupGameItemPaths(argc, argv, &config);
 
+		setupSteamSettings(hasCommandArgument(argc, argv,GAME_ARGS[GAME_ARG_STEAM]),
+				hasCommandArgument(argc, argv,GAME_ARGS[GAME_ARG_STEAM_RESET_STATS]),
+				hasCommandArgument(argc, argv,GAME_ARGS[GAME_ARG_STEAM_DEBUG]));
+
 		if(config.getString("PlayerId","") == "") {
 			char  uuid_str[38];
 			get_uuid_string(uuid_str,sizeof(uuid_str));
@@ -4533,6 +4592,7 @@ int glestMain(int argc, char** argv) {
 			config.setString("PlayerId",uuid_str);
 			config.save();
 		}
+
 		//printf("Players UUID: [%s]\n",config.getString("PlayerId","").c_str());
 
 		if(config.getBool("DisableLuaSandbox","false") == true) {
@@ -4555,7 +4615,7 @@ int glestMain(int argc, char** argv) {
 		}
 
 		if(hasCommandArgument(argc, argv,GAME_ARGS[GAME_ARG_ENABLE_NEW_PROTOCOL]) == true) {
-			printf("*NOTE: enabling new newtork protocol.\n");
+			printf("*NOTE: enabling new network protocol.\n");
 			NetworkMessage::useOldProtocol = false;
 		}
 
@@ -4968,7 +5028,6 @@ int glestMain(int argc, char** argv) {
 	        }
     	}
     	else {
-
 #ifdef _WIN32
 			int localeBufferSize = GetLocaleInfo(LOCALE_SYSTEM_DEFAULT, LOCALE_SISO639LANGNAME, NULL, 0);
 			wchar_t *sysLocale = new wchar_t[localeBufferSize];
@@ -5947,7 +6006,7 @@ void EnableCrashingOnCrashes() {
 #endif
 
 int glestMainSEHWrapper(int argc, char** argv) {
-
+	int result = 0;
 #ifdef WIN32_STACK_TRACE
 	//printf("Hooking up WIN32_STACK_TRACE...\n");
 __try {
@@ -5967,8 +6026,7 @@ __try {
 #endif
 
 	initSpecialStrings();
-	int result = 0;
-
+	
 	IRCThread::setGlobalCacheContainerName(GameConstants::ircClientCacheLookupKey);
 	result = glestMain(argc, argv);
 
@@ -5988,11 +6046,15 @@ __try {
     }
 
 	if(SystemFlags::VERBOSE_MODE_ENABLED) printf("In [%s::%s Line: %d]\n",__FILE__,__FUNCTION__,__LINE__);
-	return result;
+	
 #ifdef WIN32_STACK_TRACE
-} __except(stackdumper(0, GetExceptionInformation(),true), EXCEPTION_CONTINUE_SEARCH) { return 0; }
+}
+__except(stackdumper(0, GetExceptionInformation(),true), EXCEPTION_CONTINUE_SEARCH) {
+	return 0;
+}
 #endif
 
+return result;
 }
 
 int glestMainWrapper(int argc, char** argv) {
@@ -6053,7 +6115,22 @@ int glestMainWrapper(int argc, char** argv) {
 	SocketManager winSockManager;
 #endif
 
+	
+	bool isSteamMode = hasCommandArgument(argc, argv, GAME_ARGS[GAME_ARG_STEAM]);
+	if (isSteamMode == true) {
+		if (!STEAMSHIM_init()) {
+			printf("\nSteam API init failed, terminating.\n");
+			return 42;
+		}
+	}
+
 	int result = glestMainSEHWrapper(argc, argv);
+
+	if (isSteamMode == true) {
+		printf("\nSteam API deinit.\n");
+		STEAMSHIM_deinit();
+	}
+
 	return result;
 }
 

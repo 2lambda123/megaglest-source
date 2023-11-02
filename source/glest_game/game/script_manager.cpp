@@ -31,7 +31,7 @@ ScriptManagerMessage::ScriptManagerMessage() : text(""), header("") {
 	this->messageNotTranslated 	= true;
 }
 
-ScriptManagerMessage::ScriptManagerMessage(string textIn, string headerIn,
+ScriptManagerMessage::ScriptManagerMessage(const string &textIn, const string &headerIn,
 		int factionIndex,int teamIndex, bool messageNotTranslated) :
 				text(textIn), header(headerIn) {
 	this->factionIndex 			= factionIndex;
@@ -1357,9 +1357,7 @@ void ScriptManager::unregisterCellTriggerEvent(int eventId) {
 		if(unRegisterCellTriggerEventList.empty() == false) {
 			for(int i = 0; i < (int)unRegisterCellTriggerEventList.size(); ++i) {
 				int delayedEventId = unRegisterCellTriggerEventList[i];
-				if(CellTriggerEventList.find(delayedEventId) != CellTriggerEventList.end()) {
-					CellTriggerEventList.erase(delayedEventId);
-				}
+				CellTriggerEventList.erase(delayedEventId);
 			}
 			unRegisterCellTriggerEventList.clear();
 		}
@@ -1511,7 +1509,7 @@ Vec2i ScriptManager::getUnitPosition(int unitId) {
 void ScriptManager::setUnitPosition(int unitId, Vec2i pos) {
 	if(SystemFlags::getSystemSettingType(SystemFlags::debugLUA).enabled) SystemFlags::OutputDebug(SystemFlags::debugLUA,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
 
-	return world->setUnitPosition(unitId,pos);
+	 world->setUnitPosition(unitId,pos);
 }
 
 void ScriptManager::addCellMarker(Vec2i pos, int factionIndex, const string &note, const string &textureFile) {
@@ -1523,7 +1521,7 @@ void ScriptManager::addCellMarker(Vec2i pos, int factionIndex, const string &not
 void ScriptManager::removeCellMarker(Vec2i pos, int factionIndex) {
 	if(SystemFlags::getSystemSettingType(SystemFlags::debugLUA).enabled) SystemFlags::OutputDebug(SystemFlags::debugLUA,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
 
-	return world->removeCellMarker(pos,factionIndex);
+	 world->removeCellMarker(pos,factionIndex);
 }
 
 void ScriptManager::showMarker(Vec2i pos, int factionIndex, const string &note, const string &textureFile, int flashCount) {

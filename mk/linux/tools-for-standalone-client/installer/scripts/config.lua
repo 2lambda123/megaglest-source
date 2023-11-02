@@ -1,5 +1,5 @@
 local GAME_INSTALL_SIZE = 705000000;
-local GAME_VERSION = "3.13.0";
+local GAME_VERSION = "3.13-dev";
 
 local _ = MojoSetup.translate
 
@@ -64,7 +64,7 @@ Setup.Package
 
     postinstall = function(package)
 	if MojoSetup.promptyn(_("MegaGlest Visit Website Title"), _("MegaGlest Visit Website Prompt")) then
-        	MojoSetup.launchbrowser("http://megaglest.org/get-started.html")
+        	MojoSetup.launchbrowser("https://megaglest.org/get_started")
 	end
     end,
 
@@ -73,6 +73,9 @@ Setup.Package
 	if MojoSetup.destination ~= '' then	
 		if MojoSetup.platform.exists(MojoSetup.destination .. '/lib/') then
 			os.execute('rm -rf ' .. MojoSetup.destination .. '/lib/')
+		end
+		if MojoSetup.platform.exists(MojoSetup.destination .. '/.lib_bak/') then
+			os.execute('rm -rf ' .. MojoSetup.destination .. '/.lib_bak/')
 		end
 		if MojoSetup.platform.exists(MojoSetup.destination) then
 			os.execute('rm -rf ' .. MojoSetup.destination)

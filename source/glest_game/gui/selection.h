@@ -86,6 +86,7 @@ public:
 	const Unit *getUnit(int i) const	{return selectedUnits[i];}
 	Unit *getUnitPtr(int i) 			{return selectedUnits[i];}
 	const Unit *getFrontUnit() const	{return selectedUnits.front();}
+	const Unit *getUnitFromCC(CommandClass commandClass);
 	Vec3f getRefPos() const;
 	bool hasUnit(const Unit* unit) const;
 	
@@ -94,7 +95,7 @@ public:
 	void removeUnitFromGroup(int groupIndex,int UnitId);
 	void recallGroup(int groupIndex, bool clearSelection=true);
 
-	vector<Unit*> getUnitsForGroup(int groupIndex);
+	//vector<Unit*> getUnitsForGroup(int groupIndex);
 
 	virtual void unitEvent(UnitObserver::Event event, const Unit *unit);
 	bool canSelectUnitFactionCheck(const Unit *unit) const;

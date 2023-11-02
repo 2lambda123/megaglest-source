@@ -27,6 +27,9 @@
 #include "video_player.h"
 #include "compression_utils.h"
 #include "cache_manager.h"
+#include "conversion.h"
+#include "steam.h"
+#include "memory.h"
 
 #include "leak_dumper.h"
 
@@ -511,17 +514,17 @@ int Game::ErrorDisplayMessage(const char *msg, bool exitApp) {
     return 0;
 }
 
-Texture2D * Game::findFactionLogoTexture(const GameSettings *settings, Logger *logger,string factionLogoFilter, bool useTechDefaultIfFilterNotFound) {
-	Texture2D *result = NULL;
-	string logoFilename = Game::findFactionLogoFile(settings, logger,factionLogoFilter);
-	if(logoFilename == "" && factionLogoFilter != "" && useTechDefaultIfFilterNotFound == true) {
-		logoFilename = Game::findFactionLogoFile(settings, logger);
-	}
-
-	result = Renderer::findTexture(logoFilename);
-
-	return result;
-}
+//Texture2D * Game::findFactionLogoTexture(const GameSettings *settings, Logger *logger,string factionLogoFilter, bool useTechDefaultIfFilterNotFound) {
+//	Texture2D *result = NULL;
+//	string logoFilename = Game::findFactionLogoFile(settings, logger,factionLogoFilter);
+//	if(logoFilename == "" && factionLogoFilter != "" && useTechDefaultIfFilterNotFound == true) {
+//		logoFilename = Game::findFactionLogoFile(settings, logger);
+//	}
+//
+//	result = Renderer::findTexture(logoFilename);
+//
+//	return result;
+//}
 
 string Game::extractScenarioLogoFile(const GameSettings *settings, string &result,
 		bool &loadingImageUsed, Logger *logger, string factionLogoFilter) {
@@ -599,8 +602,8 @@ string Game::extractScenarioLogoFile(const GameSettings *settings, string &resul
     return scenarioDir;
 }
 
-string Game::extractFactionLogoFile(bool &loadingImageUsed, string factionName,
-		string scenarioDir, string techName, Logger *logger, string factionLogoFilter) {
+string Game::extractFactionLogoFile(bool &loadingImageUsed, const string &factionName,
+		string scenarioDir, const string &techName, Logger *logger, string factionLogoFilter) {
 	string result = "";
 	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d] Searching for faction loading screen\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
 
@@ -798,8 +801,8 @@ string Game::extractFactionLogoFile(bool &loadingImageUsed, string factionName,
 	return result;
 }
 
-string Game::extractTechLogoFile(string scenarioDir, string techName,
-		bool &loadingImageUsed, Logger *logger,string factionLogoFilter) {
+string Game::extractTechLogoFile(string scenarioDir, const string &techName,
+		bool &loadingImageUsed, Logger *logger,const string &factionLogoFilter) {
 	string result = "";
 	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d] Searching for tech loading screen\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
     Config &config = Config::getInstance();
@@ -889,7 +892,7 @@ void Game::loadHudTexture(const GameSettings *settings)
 }
 
 string Game::findFactionLogoFile(const GameSettings *settings, Logger *logger,
-		string factionLogoFilter) {
+		const string &factionLogoFilter) {
 	string result = "";
 	if(settings == NULL) {
 		result = "";
@@ -916,14 +919,15 @@ string Game::findFactionLogoFile(const GameSettings *settings, Logger *logger,
 			}
 		}
 
-		string scenarioDir = "";
-		bool skipCustomLoadScreen = false;
-		if(skipCustomLoadScreen == false) {
-			scenarioDir = extractScenarioLogoFile(settings, result, loadingImageUsed,
+		//string scenarioDir = "";
+		//bool skipCustomLoadScreen = false;
+		//if(skipCustomLoadScreen == false) {
+		string scenarioDir = extractScenarioLogoFile(settings, result, loadingImageUsed,
 					logger, factionLogoFilter);
-		}
+		//}
 		// try to use a faction related loading screen
-		if(skipCustomLoadScreen == false && loadingImageUsed == false) {
+		//if(skipCustomLoadScreen == false && loadingImageUsed == false) {
+		if(loadingImageUsed == false) {
 			for(int i=0; i < settings->getFactionCount(); ++i ) {
 				if( settings->getFactionControl(i) == ctHuman ||
 					(settings->getFactionControl(i) == ctNetwork && settings->getThisFactionIndex() == i)) {
@@ -936,7 +940,8 @@ string Game::findFactionLogoFile(const GameSettings *settings, Logger *logger,
 		}
 
 		// try to use a tech related loading screen
-		if(skipCustomLoadScreen == false && loadingImageUsed == false){
+		//if(skipCustomLoadScreen == false && loadingImageUsed == false){
+		if(loadingImageUsed == false) {
 			result = extractTechLogoFile(scenarioDir, techName,
 					loadingImageUsed, logger, factionLogoFilter);
 		}
@@ -5170,6 +5175,168 @@ void Game::DumpCRCWorldLogIfRequired(string fileSuffix) {
 	}
 }
 
+void savePlayerStats(Game* game, Stats& endStats, PlayerAchievementsInterface *playerStats) {
+	const double MIN_PLAY_TIME_MINUTES = 10.0;
+
+	// Write out achievements here
+	double elapsedGameMinutes = (game->getWorld()->getStats()->getFramesToCalculatePlaytime() / GameConstants::updateFps / 60.0);
+
+	for (int factionIndex = 0;
+			factionIndex < game->getWorld()->getFactionCount(); ++factionIndex) {
+		if (factionIndex == game->getWorld()->getThisFactionIndex()) {
+			//printf("\nWriting out game stats for Faction Index: %d won status: %d\n",factionIndex,endStats.getVictory(factionIndex));
+			if(elapsedGameMinutes >= MIN_PLAY_TIME_MINUTES) {
+				int gamesPlayedCount = playerStats->getStatAsInt(EnumParser<SteamStatName>::getString(games_played).c_str()) + 1;
+				playerStats->setStatAsInt(EnumParser<SteamStatName>::getString(games_played).c_str(),gamesPlayedCount);
+
+				if(gamesPlayedCount >= 50 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIFTY_GAMES).c_str()) == false) {
+					playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIFTY_GAMES).c_str());
+				}
+				if(gamesPlayedCount >= 100 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_ONE_HUNDRED_GAMES).c_str()) == false) {
+					playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_ONE_HUNDRED_GAMES).c_str());
+				}
+				if(gamesPlayedCount >= 250 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_TWO_HUNDRED_FIFTY_GAMES).c_str()) == false) {
+					playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_TWO_HUNDRED_FIFTY_GAMES).c_str());
+				}
+				if(gamesPlayedCount >= 500 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIVE_HUNDRED_GAMES).c_str()) == false) {
+					playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIVE_HUNDRED_GAMES).c_str());
+				}
+				if(gamesPlayedCount > 1000 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_OVER_THOUSAND_GAMES).c_str()) == false) {
+					playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_OVER_THOUSAND_GAMES).c_str());
+				}
+
+				if (NetworkManager::getInstance().isNetworkGame()) {
+					int networkGamesPlayedCount = playerStats->getStatAsInt(EnumParser<SteamStatName>::getString(network_games_played).c_str()) + 1;
+					playerStats->setStatAsInt(EnumParser<SteamStatName>::getString(network_games_played).c_str(),networkGamesPlayedCount);
+
+					if(networkGamesPlayedCount >= 50 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIFTY_GAMES_ONLINE).c_str()) == false) {
+						playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIFTY_GAMES_ONLINE).c_str());
+					}
+					if(networkGamesPlayedCount >= 100 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_ONE_HUNDRED_GAMES_ONLINE).c_str()) == false) {
+						playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_ONE_HUNDRED_GAMES_ONLINE).c_str());
+					}
+					if(networkGamesPlayedCount >= 250 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_TWO_HUNDRED_FIFTY_GAMES_ONLINE).c_str()) == false) {
+						playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_TWO_HUNDRED_FIFTY_GAMES_ONLINE).c_str());
+					}
+					if(networkGamesPlayedCount >= 500 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIVE_HUNDRED_GAMES_ONLINE).c_str()) == false) {
+						playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_FIVE_HUNDRED_GAMES_ONLINE).c_str());
+					}
+					if(networkGamesPlayedCount > 1000 && playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_PLAY_OVER_THOUSAND_GAMES_ONLINE).c_str()) == false) {
+						playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_PLAY_OVER_THOUSAND_GAMES_ONLINE).c_str());
+					}
+				}
+
+				if (endStats.getVictory(factionIndex)) {
+					if(playerStats->isUnlocked(EnumParser<SteamAchievementName>::getString(ACH_WIN_ONE_GAME).c_str()) == false) {
+						playerStats->unlock(EnumParser<SteamAchievementName>::getString(ACH_WIN_ONE_GAME).c_str());
+					}
+
+					if (NetworkManager::getInstance().isNetworkGame()) {
+						int networkGamesWonCount = playerStats->getStatAsInt("network-games-won") + 1;
+						playerStats->setStatAsInt("network-games-won",networkGamesWonCount);
+					}
+
+					//printf("\nPlayer won the game with at least 10 minutes of play: %f!\n",elapsedGameMinutes);
+				}
+			}
+			else {
+				//printf("\nPlayer won the game BUT NOT with at least 10 minutes of play: %f!\n",elapsedGameMinutes);
+			}
+		}
+	}
+	playerStats->storeStats();
+}
+
+void saveStatsToSteam(Game* game, Stats& endStats) {
+	Steam* steamInstance = CacheManager::getCachedItem<Steam*>(GameConstants::steamCacheInstanceKey);
+	if (steamInstance != NULL) {
+		printf("\nSTEAM detected, writing out end game stats for player!\n");
+
+		// Write out stats here
+		if (NetworkManager::getInstance().isNetworkGame()) {
+			//printf("\nSTEAM Refresh Stats!\n");
+			steamInstance->requestRefreshStats();
+			for (int factionIndex = 0;
+					factionIndex < game->getWorld()->getFactionCount(); ++factionIndex) {
+				if (factionIndex == game->getWorld()->getThisFactionIndex()) {
+					//printf("\nWriting out game stats for Faction Index: %d!\n",factionIndex);
+					if (endStats.getVictory(factionIndex)) {
+						steamInstance->setStatAsInt(EnumParser<SteamStatName>::getString(stat_online_wins).c_str(),
+								steamInstance->getStatAsInt(EnumParser<SteamStatName>::getString(stat_online_wins).c_str())
+										+ 1);
+					} else {
+						steamInstance->setStatAsInt(EnumParser<SteamStatName>::getString(stat_online_loses).c_str(),
+								steamInstance->getStatAsInt(EnumParser<SteamStatName>::getString(stat_online_loses).c_str())
+										+ 1);
+					}
+					steamInstance->setStatAsInt(EnumParser<SteamStatName>::getString(stat_online_kills).c_str(),
+							steamInstance->getStatAsInt(EnumParser<SteamStatName>::getString(stat_online_kills).c_str())
+									+ endStats.getKills(factionIndex));
+					steamInstance->setStatAsInt(EnumParser<SteamStatName>::getString(stat_online_kills_enemy).c_str(),
+							steamInstance->getStatAsInt(
+									EnumParser<SteamStatName>::getString(stat_online_kills_enemy).c_str())
+									+ endStats.getEnemyKills(factionIndex));
+					steamInstance->setStatAsInt(EnumParser<SteamStatName>::getString(stat_online_deaths).c_str(),
+							steamInstance->getStatAsInt(EnumParser<SteamStatName>::getString(stat_online_deaths).c_str())
+									+ endStats.getDeaths(factionIndex));
+					steamInstance->setStatAsInt(EnumParser<SteamStatName>::getString(stat_online_units).c_str(),
+							steamInstance->getStatAsInt(EnumParser<SteamStatName>::getString(stat_online_units).c_str())
+									+ endStats.getUnitsProduced(factionIndex));
+					steamInstance->setStatAsInt(
+							EnumParser<SteamStatName>::getString(stat_online_resources_harvested).c_str(),
+							steamInstance->getStatAsInt(
+									EnumParser<SteamStatName>::getString(stat_online_resources_harvested).c_str())
+									+ endStats.getResourcesHarvested(
+											factionIndex));
+					if (endStats.getPlayerLeftBeforeEnd(factionIndex)) {
+						steamInstance->setStatAsInt(
+								EnumParser<SteamStatName>::getString(stat_online_quit_before_end).c_str(),
+								steamInstance->getStatAsInt(
+										EnumParser<SteamStatName>::getString(stat_online_quit_before_end).c_str()) + 1);
+					}
+					steamInstance->setStatAsDouble(EnumParser<SteamStatName>::getString(stat_online_minutes_played).c_str(),
+							steamInstance->getStatAsDouble(
+									EnumParser<SteamStatName>::getString(stat_online_minutes_played).c_str())
+									+ getTimeDuationMinutes(
+											endStats.getFramesToCalculatePlaytime(),
+											GameConstants::updateFps));
+				}
+			}
+		}
+
+		// Write out achievements here
+		savePlayerStats(game, endStats, steamInstance);
+
+		//printf("\nSTEAM Store Stats!\n");
+		//steamInstance->storeStats();
+		//printf("\nSTEAM Refresh Stats!\n");
+		steamInstance->requestRefreshStats();
+	}
+	// Local Player stats for now just write out to player-stats.ini
+	// We'll clean this up to use an interface that both steam and lcoal comply with so the 'update' logic
+	// doesn't need to be duplicated.
+	else {
+		printf("\n**STEAM NOT detected, writing out NON STEAM end game stats for player!\n");
+		string saveFilePlayerLocalStats = "player-stats.ini";
+		if(getGameReadWritePath(GameConstants::path_logs_CacheLookupKey) != "") {
+			saveFilePlayerLocalStats = getGameReadWritePath(GameConstants::path_logs_CacheLookupKey) + saveFilePlayerLocalStats;
+		}
+		else {
+	        string userData = Config::getInstance().getString("UserData_Root","");
+	        if(userData != "") {
+	        	endPathWithSlash(userData);
+	        }
+	        saveFilePlayerLocalStats = userData + saveFilePlayerLocalStats;
+		}
+		SteamLocal playerLocalStats(saveFilePlayerLocalStats);
+		PlayerAchievementsInterface *playerStats = &playerLocalStats;
+
+		// Write out achievements here
+		savePlayerStats(game, endStats, playerStats);
+		//playerLocalStats->save(saveFilePlayerLocalStats);
+	}
+}
+
 void Game::exitGameState(Program *program, Stats &endStats) {
 	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
 
@@ -5193,6 +5360,8 @@ void Game::exitGameState(Program *program, Stats &endStats) {
 		printf("-----------------------\n");
 	}
 
+	saveStatsToSteam(game, endStats);
+
 	ProgramState *newState = new BattleEnd(program, &endStats, game);
 
 	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
@@ -5213,9 +5382,7 @@ void Game::highlightUnit(int unitId,float radius, float thickness, Vec4f color) 
 }
 
 void Game::unhighlightUnit(int unitId) {
-	if(unitHighlightList.find(unitId) != unitHighlightList.end()) {
-		unitHighlightList.erase(unitId);
-	}
+	unitHighlightList.erase(unitId);
 }
 
 // ==================== render ====================
@@ -6046,16 +6213,16 @@ bool Game::factionLostGame(const Faction *faction) {
 	return true;
 }
 
-bool Game::hasBuilding(const Faction *faction) {
-	if(faction != NULL) {
-		for(int i=0; i<faction->getUnitCount(); ++i) {
-			if(faction->getUnit(i)->getType()->hasSkillClass(scBeBuilt)) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
+//bool Game::hasBuilding(const Faction *faction) {
+//	if(faction != NULL) {
+//		for(int i=0; i<faction->getUnitCount(); ++i) {
+//			if(faction->getUnit(i)->getType()->hasSkillClass(scBeBuilt)) {
+//				return true;
+//			}
+//		}
+//	}
+//	return false;
+//}
 
 void Game::incSpeed() {
 	if(disableSpeedChange == true) {
@@ -6452,7 +6619,7 @@ void Game::saveGame(){
 	config.save();
 }
 
-string Game::saveGame(string name, string path) {
+string Game::saveGame(string name, const string &path) {
 	Config &config= Config::getInstance();
 	// auto name file if using saved file pattern string
 	if(name == GameConstants::saveGameFilePattern) {

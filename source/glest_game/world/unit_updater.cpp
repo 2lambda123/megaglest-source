@@ -40,6 +40,8 @@ namespace Glest{ namespace Game{
 // 	class UnitUpdater
 // =====================================================
 
+time_t UnitRangeCellsLookupItem::lastDebug = 0;
+
 // ===================== PUBLIC ========================
 
 UnitUpdater::UnitUpdater() : mutexAttackWarnings(new Mutex(CODE_AT_LINE)),
@@ -288,19 +290,10 @@ bool UnitUpdater::updateUnit(Unit *unit) {
 			// !!! Is this causing choppy network play somehow?
 			//unit->computeHp();
 		}
-		else if(unit->getCommandSize() > 0) {
-			Command *command= unit->getCurrCommand();
-			if(command != NULL) {
-
-				const AttackCommandType *act= dynamic_cast<const AttackCommandType*>(command->getCommandType());
-				if (act != NULL && act->getAttackSkillType() != NULL
-						&& act->getAttackSkillType()->getSpawnUnit() != ""
-						&& act->getAttackSkillType()->getSpawnUnitCount() > 0) {
-					spawnAttack(unit, act->getAttackSkillType()->getSpawnUnit(),
-							act->getAttackSkillType()->getSpawnUnitCount(), 100,
-							100, 100,
-							act->getAttackSkillType()->getSpawnUnitAtTarget());
-				}
+		else if (unit->getCurrSkill() != NULL && unit->getCurrSkill()->getClass() == scAttack) {
+			const AttackSkillType *attackSkill = dynamic_cast<const AttackSkillType*>(unit->getCurrSkill());
+			if (attackSkill != NULL && attackSkill->getSpawnUnit() != "" && attackSkill->getSpawnUnitCount() > 0) {
+				spawnAttack(unit, attackSkill->getSpawnUnit(), attackSkill->getSpawnUnitCount(), 100, 100, 100, attackSkill->getSpawnUnitAtTarget());
 			}
 		}
 		
@@ -418,7 +411,7 @@ Unit* UnitUpdater::spawnUnit(Unit *unit,string spawnUnit,Vec2i spawnPos) {
 
 	Unit *spawned= new Unit(world->getNextUnitId(unit->getFaction()), newpath,
 							Vec2i(0), spawnUnitType, unit->getFaction(),
-							world->getMap(), CardinalDir::NORTH);
+							world->getMap(), CardinalDir(CardinalDir::NORTH));
 
 	bool placedSpawnUnit=world->placeUnit(_spawnPos, 10, spawned);
 
@@ -2095,7 +2088,7 @@ void UnitUpdater::updateRepair(Unit *unit, int frameIndex) {
 
 						const CommandType *ctbuild = unit->getType()->getFirstCtOfClass(ccBuild);
 						NetworkCommand networkCommand(this->world,nctGiveCommand, unit->getId(), ctbuild->getId(), command->getPos(),
-														command->getUnitType()->getId(), -1, CardinalDir::NORTH, true, command->getStateType(),
+														command->getUnitType()->getId(), -1, CardinalDir(CardinalDir::NORTH), true, command->getStateType(),
 														command->getStateValue());
 
 						if(SystemFlags::getSystemSettingType(SystemFlags::debugUnitCommands).enabled) SystemFlags::OutputDebug(SystemFlags::debugUnitCommands,"In [%s::%s Line: %d]\n",__FILE__,__FUNCTION__,__LINE__);
@@ -2369,7 +2362,7 @@ void UnitUpdater::updateProduce(Unit *unit, int frameIndex) {
 					throw megaglest_runtime_error("detected unsupported pathfinder type!");
 		    }
 
-			produced= new Unit(world->getNextUnitId(unit->getFaction()), newpath, Vec2i(0), pct->getProducedUnit(), unit->getFaction(), world->getMap(), CardinalDir::NORTH);
+			produced= new Unit(world->getNextUnitId(unit->getFaction()), newpath, Vec2i(0), pct->getProducedUnit(), unit->getFaction(), world->getMap(), CardinalDir(CardinalDir::NORTH));
 
 			if(SystemFlags::getSystemSettingType(SystemFlags::debugUnitCommands).enabled) SystemFlags::OutputDebug(SystemFlags::debugUnitCommands,"In [%s::%s Line: %d] about to place unit for unit [%s]\n",__FILE__,__FUNCTION__,__LINE__,produced->toString(false).c_str());
 
@@ -2980,6 +2973,9 @@ bool UnitUpdater::unitOnRange(Unit *unit, int range, Unit **rangedPtr,
 	//attack enemies that can attack first
 	float distToUnit= -1;
 	Unit* enemySeen= NULL;
+	std::vector<Unit*> fightingEnemiesInRange;
+	std::vector<Unit*> damagedFightingEnemiesInRange;
+	Unit* myFightingEnemyInRange= NULL;
 
 	float distToStandingUnit= -1;
 	Unit* attackingEnemySeen= NULL;
@@ -3013,38 +3009,81 @@ bool UnitUpdater::unitOnRange(Unit *unit, int range, Unit **rangedPtr,
 
     			//randomInfoData += " currentDist = " + floatToStr(currentDist);
 
-    			// Select closest attacking unit
-    			if(distToUnit < 0 ||  currentDist< distToUnit) {
-    				distToUnit = currentDist;
-					*rangedPtr	= enemies[i];
-					enemySeen	= enemies[i];
-					result		= true;
-    			}
+					// Select closest attacking unit
+					if (distToUnit < 0 || currentDist < distToUnit) {
+						distToUnit = currentDist;
+						*rangedPtr = enemy;
+						enemySeen = enemy;
+						result = true;
+					}
 
-    			if(isUltra || isMega) {
+					if (distToStandingUnit < 0
+							|| currentDist < distToStandingUnit) {
+						if (enemy->getCurrSkill() != NULL
+								&& enemy->getCurrSkill()->getClass()
+										== scAttack) {
+							distToStandingUnit = currentDist;
+							attackingEnemySeen = enemy;
+						}
+					}
 
-        			if(distToStandingUnit < 0 || currentDist< distToStandingUnit) {
-        			    if(enemies[i]->getCurrSkill()!=NULL && enemies[i]->getCurrSkill()->getClass()==scAttack) {
-        			    	distToStandingUnit = currentDist;
-        			    	attackingEnemySeen=enemies[i];
-        			    }
-        			}
-    			}
+					if (enemy->getCurrSkill() != NULL
+							&& enemy->getCurrSkill()->getClass() == scAttack) {
+						if(enemy->getId()==unit->getLastAttackedUnitId())
+							myFightingEnemyInRange=enemy;
+						AttackSkillType* ast =
+								(AttackSkillType*) (enemy->getCurrSkill());
+						int enemyAttackRange = ast->getTotalAttackRange(unit->getTotalUpgrade());
+						if (enemyAttackRange > 1) {
+							fightingEnemiesInRange.push_back(enemy);
+							if( unit->getHpRatio()<0.9){
+								damagedFightingEnemiesInRange.push_back(enemy);
+							}
+						}
+					}
+
     		}
     	}
     }
+		if (evalMode == false) {
+			bool doUltra = false;
+			if (isMega) {
+				if (myFightingEnemyInRange != NULL) {
+					//printf("Choosed my good old friend\n");
+					*rangedPtr = myFightingEnemyInRange;
+					enemySeen = myFightingEnemyInRange;
+				} else {
+					unit->getRandom()->addLastCaller(randomInfoData);
+					bool doit = unit->getRandom()->randRange(0, 2, extractFileFromDirectoryPath(__FILE__) + intToStr(__LINE__)) < 2;
+					//printf("fightingEnemiesInRange.size()=%d\n",fightingEnemiesInRange.size());
+					if (fightingEnemiesInRange.size() > 0 && doit) {
+						std::vector<Unit*> * unitList;
+						if (damagedFightingEnemiesInRange.size() > 0)
+							unitList = &damagedFightingEnemiesInRange;
+						else
+							unitList = &fightingEnemiesInRange;
 
-    if(evalMode == false && (isUltra || isMega)) {
+						//printf("Choosing new one\n");
+						int myChoice = unit->getRandom()->randRange(1, unitList->size(), extractFileFromDirectoryPath(__FILE__) + intToStr(__LINE__));
+						//printf("myChoice=%d\n", myChoice);
+						Unit* choosenOne = (*unitList)[myChoice - 1];
+						//printf("choosenOne=%s team=%d\n", choosenOne->getType()->getName().c_str(), choosenOne->getFactionIndex());
+						*rangedPtr = choosenOne;
+						enemySeen = choosenOne;
+					} else
+						doUltra = true;;
+				}
+			}
+			if ((isUltra || doUltra)) {
+				unit->getRandom()->addLastCaller(randomInfoData);
+				bool doit = unit->getRandom()->randRange(0, 2, extractFileFromDirectoryPath(__FILE__) + intToStr(__LINE__)) != 2;
+				if (attackingEnemySeen != NULL && doit) {
+					*rangedPtr = attackingEnemySeen;
+					enemySeen = attackingEnemySeen;
+				}
+			}
+		}
 
-    	unit->getRandom()->addLastCaller(randomInfoData);
-
-    	if( attackingEnemySeen != NULL && unit->getRandom()->randRange(0,2,extractFileFromDirectoryPath(__FILE__) + intToStr(__LINE__)) != 2 ) {
-    	//if( attackingEnemySeen != NULL) {
-    		*rangedPtr 	= attackingEnemySeen;
-    		enemySeen 	= attackingEnemySeen;
-    		//printf("Da hat er wen gefunden:%s\n",enemySeen->getType()->getName(false).c_str());
-    	}
-    }
 
 	if(result == true) {
 
@@ -3403,8 +3442,8 @@ void ParticleDamager::update(ParticleSystem *particleSystem) {
 
 		//check for spawnattack
 		if(projectileType->getSpawnUnit()!="" && projectileType->getSpawnUnitcount()>0 ){
-			unitUpdater->spawnAttack(attacker, projectileType->getSpawnUnit(), 100,
-					100, 100, projectileType->getSpawnUnitcount(),
+			unitUpdater->spawnAttack(attacker, projectileType->getSpawnUnit(), projectileType->getSpawnUnitcount(),
+					100, 100, 100,
 					projectileType->getSpawnUnitAtTarget(), targetPos);
 		}
 

@@ -66,9 +66,9 @@ private:
 
 	ProduceTask();
 public:
-	ProduceTask(UnitClass unitClass);
-	ProduceTask(const UnitType *unitType);
-	ProduceTask(const ResourceType *resourceType);
+	explicit ProduceTask(UnitClass unitClass);
+	explicit ProduceTask(const UnitType *unitType);
+	explicit ProduceTask(const ResourceType *resourceType);
 	
 	UnitClass getUnitClass() const					{return unitClass;} 
 	const UnitType *getUnitType() const				{return unitType;}
@@ -91,8 +91,8 @@ private:
 	BuildTask();
 
 public:
-	BuildTask(const UnitType *unitType);
-	BuildTask(const ResourceType *resourceType);
+	explicit BuildTask(const UnitType *unitType);
+	explicit BuildTask(const ResourceType *resourceType);
 	BuildTask(const UnitType *unitType, const Vec2i &pos);
 
 	const UnitType *getUnitType() const			{return unitType;}
@@ -113,7 +113,7 @@ private:
 
 	UpgradeTask();
 public:
-	UpgradeTask(const UpgradeType *upgradeType);
+	explicit UpgradeTask(const UpgradeType *upgradeType);
 	const UpgradeType *getUpgradeType() const	{return upgradeType;}
 	virtual string toString() const;
 
@@ -211,7 +211,7 @@ public:
 	bool findPosForBuilding(const UnitType* building, const Vec2i &searchPos, Vec2i &pos);
 	bool findAbleUnit(int *unitIndex, CommandClass ability, bool idleOnly);
 	bool findAbleUnit(int *unitIndex, CommandClass ability, CommandClass currentCommand);
-	vector<int> findUnitsDoingCommand(CommandClass currentCommand);
+	//vector<int> findUnitsDoingCommand(CommandClass currentCommand);
 	vector<int> findUnitsHarvestingResourceType(const ResourceType *rt);
 
 	bool beingAttacked(Vec2i &pos, Field &field, int radius);

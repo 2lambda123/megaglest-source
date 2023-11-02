@@ -201,8 +201,8 @@ bool IsNumeric(const char *p, bool  allowNegative) {
 class Comma: public numpunct<char>// own facet class
 {
      protected:
-          char do_thousands_sep() const { return ','; }// use the comma
-          string do_grouping() const { return "\3"; }//group 3 digits
+          //char do_thousands_sep() const { return ','; }// use the comma
+          //string do_grouping() const { return "\3"; }//group 3 digits
 };
 string formatNumber(uint64 f) {
 
@@ -213,6 +213,21 @@ string formatNumber(uint64 f) {
 	out.imbue(myloc);
 	out << f;
 	return out.str();
+}
+
+double getTimeDuationMinutes(int frames, int updateFps) {
+	int framesleft = frames;
+	double hours = (int)((int) frames / (float)updateFps / 3600.0f);
+	framesleft = framesleft - hours * 3600 * updateFps;
+	double minutes = (int)((int) framesleft / (float)updateFps / 60.0f);
+	framesleft = framesleft - minutes * 60 * updateFps;
+	double seconds = (int)((int) framesleft / (float)updateFps);
+
+	double result = (hours * 60.0) + minutes;
+	if(seconds > 0) {
+		result += seconds / 60.0;
+	}
+	return result;
 }
 
 string getTimeDuationString(int frames, int updateFps) {

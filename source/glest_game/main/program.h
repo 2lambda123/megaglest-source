@@ -68,7 +68,7 @@ public:
 
     static const char *MAIN_PROGRAM_RENDER_KEY;
 
-	ProgramState(Program *program);
+	explicit ProgramState(Program *program);
 	virtual ~ProgramState(){};
 
     int getFps() const { return fps; }
@@ -222,8 +222,8 @@ public:
 	void renderProgramMsgBox();
 	bool isInSpecialKeyCaptureEvent() { return programState->isInSpecialKeyCaptureEvent(); }
 
-	void reInitGl();
-	void resetSoundSystem();
+	//void reInitGl();
+	//void resetSoundSystem();
 	void stopSoundSystem();
 	void startSoundSystem();
 

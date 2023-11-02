@@ -842,23 +842,23 @@ void Renderer::endMenu() {
 	//}
 }
 
-void Renderer::reloadResources() {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	for(int i=0; i<rsCount; ++i) {
-		modelManager[i]->end();
-		textureManager[i]->end();
-		fontManager[i]->end();
-	}
-
-	for(int i=0; i<rsCount; ++i) {
-		modelManager[i]->init();
-		textureManager[i]->init();
-		fontManager[i]->init();
-	}
-}
+//void Renderer::reloadResources() {
+//	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
+//		return;
+//	}
+//
+//	for(int i=0; i<rsCount; ++i) {
+//		modelManager[i]->end();
+//		textureManager[i]->end();
+//		fontManager[i]->end();
+//	}
+//
+//	for(int i=0; i<rsCount; ++i) {
+//		modelManager[i]->init();
+//		textureManager[i]->init();
+//		fontManager[i]->init();
+//	}
+//}
 
 // ==================== engine interface ====================
 
@@ -962,13 +962,13 @@ void Renderer::endFont(::Shared::Graphics::Font *font, ResourceScope rs, bool mu
 	fontManager[rs]->endFont(font,mustExistInList);
 }
 
-void Renderer::resetFontManager(ResourceScope rs) {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-	fontManager[rs]->end();
-	fontManager[rsGlobal]->init();
-}
+//void Renderer::resetFontManager(ResourceScope rs) {
+//	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
+//		return;
+//	}
+//	fontManager[rs]->end();
+//	fontManager[rsGlobal]->init();
+//}
 
 void Renderer::addToDeferredParticleSystemList(std::pair<ParticleSystem *, ResourceScope> deferredParticleSystem) {
 	deferredParticleSystems.push_back(deferredParticleSystem);
@@ -1098,33 +1098,33 @@ void Renderer::setupLighting() {
 	assertGl();
 }
 
-void Renderer::setupLightingForRotatedModel() {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	const World *world= game->getWorld();
-	//const GameCamera *gameCamera= game->getGameCamera();
-	const TimeFlow *timeFlow= world->getTimeFlow();
-	float time= timeFlow->getTime();
-
-	assertGl();
-
-    //sun/moon light
-	Vec3f lightColor= timeFlow->computeLightColor();
-	Vec3f fogColor= world->getTileset()->getFogColor();
-	Vec4f lightPos= timeFlow->isDay()? computeSunPos(time): computeMoonPos(time);
-	//nearestLightPos= lightPos;
-
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPos.ptr());
-	glLightfv(GL_LIGHT0, GL_AMBIENT, Vec4f(lightColor*lightAmbFactor, 1.f).ptr());
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec4f(lightColor, 1.f).ptr());
-	glLightfv(GL_LIGHT0, GL_SPECULAR, Vec4f(0.0f, 0.0f, 0.f, 1.f).ptr());
-
-	glFogfv(GL_FOG_COLOR, Vec4f(fogColor*lightColor, 1.f).ptr());
-
-	assertGl();
-}
+//void Renderer::setupLightingForRotatedModel() {
+//	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
+//		return;
+//	}
+//
+//	const World *world= game->getWorld();
+//	//const GameCamera *gameCamera= game->getGameCamera();
+//	const TimeFlow *timeFlow= world->getTimeFlow();
+//	float time= timeFlow->getTime();
+//
+//	assertGl();
+//
+//    //sun/moon light
+//	Vec3f lightColor= timeFlow->computeLightColor();
+//	Vec3f fogColor= world->getTileset()->getFogColor();
+//	Vec4f lightPos= timeFlow->isDay()? computeSunPos(time): computeMoonPos(time);
+//	//nearestLightPos= lightPos;
+//
+//	glLightfv(GL_LIGHT0, GL_POSITION, lightPos.ptr());
+//	glLightfv(GL_LIGHT0, GL_AMBIENT, Vec4f(lightColor*lightAmbFactor, 1.f).ptr());
+//	glLightfv(GL_LIGHT0, GL_DIFFUSE, Vec4f(lightColor, 1.f).ptr());
+//	glLightfv(GL_LIGHT0, GL_SPECULAR, Vec4f(0.0f, 0.0f, 0.f, 1.f).ptr());
+//
+//	glFogfv(GL_FOG_COLOR, Vec4f(fogColor*lightColor, 1.f).ptr());
+//
+//	assertGl();
+//}
 
 void Renderer::loadGameCameraMatrix() {
 	const GameCamera *gameCamera= game->getGameCamera();
@@ -1407,30 +1407,30 @@ bool Renderer::ExtractFrustum(VisibleQuadContainerCache &quadCacheItem) {
    return frustumChanged;
 }
 
-bool Renderer::PointInFrustum(vector<vector<float> > &frustum, float x, float y, float z ) {
-   unsigned int p=0;
-
-   for( p = 0; p < frustum.size(); p++ ) {
-      if( frustum[p][0] * x + frustum[p][1] * y + frustum[p][2] * z + frustum[p][3] <= 0 ) {
-         return false;
-      }
-   }
-   return true;
-}
-
-bool Renderer::SphereInFrustum(vector<vector<float> > &frustum,  float x, float y, float z, float radius) {
-	// Go through all the sides of the frustum
-	for(int i = 0; i < (int)frustum.size(); i++ ) {
-		// If the center of the sphere is farther away from the plane than the radius
-		if(frustum[i][0] * x + frustum[i][1] * y + frustum[i][2] * z + frustum[i][3] <= -radius ) {
-			// The distance was greater than the radius so the sphere is outside of the frustum
-			return false;
-		}
-	}
-
-	// The sphere was inside of the frustum!
-	return true;
-}
+//bool Renderer::PointInFrustum(vector<vector<float> > &frustum, float x, float y, float z ) {
+//   unsigned int p=0;
+//
+//   for( p = 0; p < frustum.size(); p++ ) {
+//      if( frustum[p][0] * x + frustum[p][1] * y + frustum[p][2] * z + frustum[p][3] <= 0 ) {
+//         return false;
+//      }
+//   }
+//   return true;
+//}
+//
+//bool Renderer::SphereInFrustum(vector<vector<float> > &frustum,  float x, float y, float z, float radius) {
+//	// Go through all the sides of the frustum
+//	for(int i = 0; i < (int)frustum.size(); i++ ) {
+//		// If the center of the sphere is farther away from the plane than the radius
+//		if(frustum[i][0] * x + frustum[i][1] * y + frustum[i][2] * z + frustum[i][3] <= -radius ) {
+//			// The distance was greater than the radius so the sphere is outside of the frustum
+//			return false;
+//		}
+//	}
+//
+//	// The sphere was inside of the frustum!
+//	return true;
+//}
 
 bool Renderer::CubeInFrustum(vector<vector<float> > &frustum, float x, float y, float z, float size ) {
    unsigned int p=0;
@@ -2408,7 +2408,17 @@ void Renderer::renderResourceStatus() {
 	}
 
 	const Faction *thisFaction = world->getFaction(world->getThisFactionIndex());
-
+	if(thisFaction->getPersonalityType() == fpt_Observer){
+		// render resources of selected units faction
+		const Gui *gui = game->getGui();
+		if(gui != NULL) {
+			const Selection *selection = gui->getSelection();
+			if(selection != NULL && selection->getCount() > 0 && selection->getFrontUnit() != NULL) {
+				const Unit *selectedUnit = selection->getFrontUnit();
+			    thisFaction=selectedUnit->getFaction();
+			}
+		}
+	}
 	assertGl();
 	glPushAttrib(GL_ENABLE_BIT);
 
@@ -2547,9 +2557,9 @@ void Renderer::renderResourceStatus() {
 						twoRessourceLines, rt, rowsRendered, resourceCountRendered);
 			}
 		}
-		if(resourceCountRendered > 0) {
-			rowsRendered++;
-		}
+		//if(resourceCountRendered > 0) {
+		//	rowsRendered++;
+		//}
 	}
 
 	glPopAttrib();
@@ -2777,21 +2787,36 @@ void Renderer::renderTextSurroundingBox(int x, int y, int w, int h,
 	glEnd();
 }
 
-void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font,
-		float alpha, int x, int y, int w, int h, bool centeredW, bool centeredH,
-		bool editModeEnabled,int maxEditWidth, int maxEditRenderWidth) {
+//
+// renderTextBoundingBox3D
+//
+
+void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font, float alpha, int x, int y, int w, int h, bool centeredW, bool centeredH,
+		bool editModeEnabled, int maxEditWidth, int maxEditRenderWidth) {
+	renderTextBoundingBox3D(text, font, Vec4f(1.f, 1.f, 1.f, alpha), x, y, w, h, centeredW, centeredH, editModeEnabled, maxEditRenderWidth, maxEditRenderWidth);
+}
+
+void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font, const Vec3f &color, int x, int y, int w, int h, bool centeredW, bool centeredH,
+		bool editModeEnabled, int maxEditWidth, int maxEditRenderWidth) {
+	renderTextBoundingBox3D(text, font, Vec4f(color.x, color.y, color.z, 1.f), x, y, w, h, centeredW, centeredH, editModeEnabled, maxEditRenderWidth,
+			maxEditRenderWidth);
+}
+
+void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font, const Vec4f &color, int x, int y, int w, int h, bool centeredW, bool centeredH,
+		bool editModeEnabled, int maxEditWidth, int maxEditRenderWidth) {
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
 		return;
 	}
 
 	glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
 	glEnable(GL_BLEND);
-	glColor4fv(Vec4f(1.f, 1.f, 1.f, alpha).ptr());
+	glColor4fv(color.ptr());
 
 	Vec2f pos= Vec2f(x, y);
 	//Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
+
 	if(centeredW == true || centeredH == true) {
-		getCentered3DPos(text, font, pos, w, h, centeredW, centeredH);
+		getCentered3DPos(text, font, pos, w, h,centeredW,centeredH);
 	}
 
 	if(editModeEnabled) {
@@ -2809,7 +2834,7 @@ void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font,
 
 		renderTextSurroundingBox(pos.x, pos.y, w, h,maxEditWidth,maxEditRenderWidth);
 	}
-	glColor4fv(Vec4f(1.f, 1.f, 1.f, alpha).ptr());
+	glColor4fv(color.ptr());
 	TextRendererSafeWrapper safeTextRender(textRenderer3D,font);
 	textRenderer3D->render(text, pos.x, pos.y);
 	safeTextRender.end();
@@ -2818,35 +2843,58 @@ void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font,
 	glPopAttrib();
 }
 
+
+//
+// renderText3D
+//
+
 void Renderer::renderText3D(const string &text, Font3D *font, float alpha, int x, int y, bool centered) {
+	renderText3D(text,font,Vec4f(1.f, 1.f, 1.f, alpha),x,y,centered);
+}
+
+void Renderer::renderText3D(const string &text, Font3D *font, const Vec3f &color, int x, int y, bool centered) {
+	renderText3D(text,font,Vec4f(color.x, color.y, color.z, 1.f),x,y,centered);
+}
+
+void Renderer::renderText3D(const string &text, Font3D *font, const Vec4f &color, int x, int y, bool centered) {
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
 		return;
 	}
 
 	glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
 	glEnable(GL_BLEND);
-	glColor4fv(Vec4f(1.f, 1.f, 1.f, alpha).ptr());
+	glColor4fv(color.ptr());
 
 	Vec2i pos= Vec2i(x, y);
 	//Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
 
 	TextRendererSafeWrapper safeTextRender(textRenderer3D,font);
 	textRenderer3D->render(text, pos.x, pos.y, centered);
-	//textRenderer3D->end();
 	safeTextRender.end();
 
 	glDisable(GL_BLEND);
 	glPopAttrib();
 }
 
+//
+// renderText
+//
 void Renderer::renderText(const string &text, Font2D *font, float alpha, int x, int y, bool centered) {
+	renderText(text,font,Vec4f(1.f, 1.f, 1.f, alpha),x,y,centered);
+}
+
+void Renderer::renderText(const string &text, Font2D *font, const Vec3f &color, int x, int y, bool centered){
+	renderText(text,font,Vec4f(color.x, color.y, color.z, 1.f),x,y,centered);
+}
+
+void Renderer::renderText(const string &text, Font2D *font, const Vec4f &color, int x, int y, bool centered){
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
 		return;
 	}
 
 	glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
 	glEnable(GL_BLEND);
-	glColor4fv(Vec4f(1.f, 1.f, 1.f, alpha).ptr());
+	glColor4fv(color.ptr());
 
 	Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
 
@@ -2921,161 +2969,6 @@ Vec2f Renderer::getCentered3DPos(const string &text, Font3D *font, Vec2f &pos, i
 	return pos;
 }
 
-void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font,
-		const Vec3f &color, int x, int y, int w, int h, bool centeredW,
-		bool centeredH, bool editModeEnabled,int maxEditWidth, int maxEditRenderWidth) {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	glPushAttrib(GL_CURRENT_BIT);
-	glColor3fv(color.ptr());
-
-	Vec2f pos= Vec2f(x, y);
-	//Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
-
-	if(centeredW == true || centeredH == true) {
-		getCentered3DPos(text, font, pos, w, h,centeredW,centeredH);
-	}
-
-	if(editModeEnabled) {
-		if(maxEditWidth >= 0 || maxEditRenderWidth >= 0) {
-			int useWidth = maxEditWidth;
-			string temp = "";
-			for(int i = 0; i < useWidth; ++i) {
-				temp += DEFAULT_CHAR_FOR_WIDTH_CALC;
-			}
-			float lineWidth = (font->getTextHandler()->Advance(temp.c_str()) * ::Shared::Graphics::Font::scaleFontValue);
-			useWidth = (int)lineWidth;
-
-			maxEditWidth = useWidth;
-		}
-
-		renderTextSurroundingBox(pos.x, pos.y, w, h,maxEditWidth,maxEditRenderWidth);
-	}
-	glColor3fv(color.ptr());
-	TextRendererSafeWrapper safeTextRender(textRenderer3D,font);
-	textRenderer3D->render(text, pos.x, pos.y);
-	safeTextRender.end();
-
-	glPopAttrib();
-}
-
-void Renderer::renderText3D(const string &text, Font3D *font, const Vec3f &color, int x, int y, bool centered) {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	glPushAttrib(GL_CURRENT_BIT);
-	glColor3fv(color.ptr());
-
-	Vec2i pos= Vec2i(x, y);
-	//Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
-
-	TextRendererSafeWrapper safeTextRender(textRenderer3D,font);
-	textRenderer3D->render(text, pos.x, pos.y, centered);
-	safeTextRender.end();
-
-	glPopAttrib();
-}
-
-void Renderer::renderText(const string &text, Font2D *font, const Vec3f &color, int x, int y, bool centered){
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	glPushAttrib(GL_CURRENT_BIT);
-	glColor3fv(color.ptr());
-
-	Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
-
-	TextRendererSafeWrapper safeTextRender(textRenderer,font);
-	textRenderer->render(text, pos.x, pos.y);
-	safeTextRender.end();
-
-	glPopAttrib();
-}
-
-void Renderer::renderTextBoundingBox3D(const string &text, Font3D *font,
-		const Vec4f &color, int x, int y, int w, int h, bool centeredW,
-		bool centeredH, bool editModeEnabled,int maxEditWidth, int maxEditRenderWidth) {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
-	glEnable(GL_BLEND);
-	glColor4fv(color.ptr());
-
-	Vec2f pos= Vec2f(x, y);
-	//Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
-
-	if(centeredW == true || centeredH == true) {
-		getCentered3DPos(text, font, pos, w, h,centeredW,centeredH);
-	}
-
-	if(editModeEnabled) {
-		if(maxEditWidth >= 0 || maxEditRenderWidth >= 0) {
-			int useWidth = maxEditWidth;
-			string temp = "";
-			for(int i = 0; i < useWidth; ++i) {
-				temp += DEFAULT_CHAR_FOR_WIDTH_CALC;
-			}
-			float lineWidth = (font->getTextHandler()->Advance(temp.c_str()) * ::Shared::Graphics::Font::scaleFontValue);
-			useWidth = (int)lineWidth;
-
-			maxEditWidth = useWidth;
-		}
-
-		renderTextSurroundingBox(pos.x, pos.y, w, h,maxEditWidth,maxEditRenderWidth);
-	}
-	glColor4fv(color.ptr());
-	TextRendererSafeWrapper safeTextRender(textRenderer3D,font);
-	textRenderer3D->render(text, pos.x, pos.y);
-	safeTextRender.end();
-
-	glDisable(GL_BLEND);
-	glPopAttrib();
-}
-
-void Renderer::renderText3D(const string &text, Font3D *font, const Vec4f &color, int x, int y, bool centered) {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
-	glEnable(GL_BLEND);
-	glColor4fv(color.ptr());
-
-	Vec2i pos= Vec2i(x, y);
-	//Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
-
-	TextRendererSafeWrapper safeTextRender(textRenderer3D,font);
-	textRenderer3D->render(text, pos.x, pos.y, centered);
-	safeTextRender.end();
-
-	glDisable(GL_BLEND);
-	glPopAttrib();
-}
-
-void Renderer::renderText(const string &text, Font2D *font, const Vec4f &color, int x, int y, bool centered){
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
-	glEnable(GL_BLEND);
-	glColor4fv(color.ptr());
-
-	Vec2i pos= centered? computeCenteredPos(text, font, x, y): Vec2i(x, y);
-
-	TextRendererSafeWrapper safeTextRender(textRenderer,font);
-	textRenderer->render(text, pos.x, pos.y);
-	safeTextRender.end();
-
-	glPopAttrib();
-}
-
 void Renderer::renderTextShadow3D(const string &text, Font3D *font,const Vec4f &color, int x, int y, bool centered) {
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
 		return;
@@ -3136,6 +3029,10 @@ void Renderer::renderTextShadow(const string &text, Font2D *font,const Vec4f &co
 
 void Renderer::renderLabel(GraphicLabel *label) {
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
+		return;
+	}
+
+	if( label->getVisible()==false){
 		return;
 	}
 
@@ -3642,7 +3539,17 @@ void Renderer::renderScrollBar(const GraphicScrollBar *sb) {
     int h= sb->getH();
     int w= sb->getW();
 
-	//const Vec3f disabledTextColor= Vec3f(0.25f,0.25f,0.25f);
+    // calc real length
+    if(sb->getElementCount()<sb->getVisibleSize()){
+    	int realLength=sb->getElementCount()*sb->getLength()/ sb->getVisibleSize();
+    	if (sb->getHorizontal()) {
+    		x=x-(w-realLength);
+    	}
+    	else {
+    		y=y+(h-realLength);
+    		h=realLength;
+    	};
+    }
 
 	glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT);
 	/////////////////////
@@ -3653,6 +3560,11 @@ void Renderer::renderScrollBar(const GraphicScrollBar *sb) {
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
+
+	Vec4f fontColor;
+	fontColor=Vec4f(1.f, 1.f, 1.f, GraphicComponent::getFade());
+	Vec4f color= fontColor;
+	glColor4fv(color.ptr());
 
 	glBindTexture(GL_TEXTURE_2D, static_cast<Texture2DGl*>(backTexture)->getHandle());
 
@@ -3675,39 +3587,21 @@ void Renderer::renderScrollBar(const GraphicScrollBar *sb) {
 	// selectBlock
 	////////////////////
 
-    x= sb->getX();
-    y= sb->getY();
-    h= sb->getH();
-    w= sb->getW();
-
-    if( sb->getHorizontal()) {
-    	x=x+sb->getVisibleCompPosStart();
-    	w=sb->getVisibleCompPosEnd()-sb->getVisibleCompPosStart();
-    }
-    else {
-    	y=y+sb->getVisibleCompPosStart();
-    	h=sb->getVisibleCompPosEnd()-sb->getVisibleCompPosStart();
-    }
+	if (sb->getElementCount() >= sb->getVisibleSize()) {
+		if (sb->getHorizontal()) {
+			x = x + sb->getVisibleCompPosStart();
+			w = sb->getVisibleCompPosEnd() - sb->getVisibleCompPosStart();
+		} else {
+			y = y + sb->getVisibleCompPosStart();
+			h = sb->getVisibleCompPosEnd() - sb->getVisibleCompPosStart();
+		}
+	}
 
 	Texture2D *selectTexture= coreData.getButtonBigTexture();
 	assert(selectTexture != NULL);
 
 	glBindTexture(GL_TEXTURE_2D, static_cast<Texture2DGl*>(selectTexture)->getHandle());
 
-	//button
-	Vec4f fontColor;
-	//if(game!=NULL){
-	//	fontColor=game->getGui()->getDisplay()->getColor();
-	//	fontColor.w = GraphicComponent::getFade();
-	//}
-	//else {
-		// white shadowed is default ( in the menu for example )
-		fontColor=Vec4f(1.f, 1.f, 1.f, GraphicComponent::getFade());
-	//}
-
-	//Vec4f color= Vec4f(1.f, 1.f, 1.f, GraphicComponent::getFade());
-	Vec4f color= fontColor;
-	glColor4fv(color.ptr());
 
 	glBegin(GL_TRIANGLE_STRIP);
 		glTexCoord2f(0.f, 0.f);
@@ -3829,6 +3723,110 @@ void Renderer::renderListBox(GraphicListBox *listBox) {
 		    int y= listBox->getY();
 		    int h= listBox->getH();
 		    int w= listBox->getW()-listBox->getButton1()->getW()-listBox->getButton2()->getW();
+
+			const int lightSize= 0;
+			const Vec4f color1= Vec4f(color.x, color.y, color.z, 0.1f+anim*0.5f);
+			const Vec4f color2= Vec4f(color.x, color.y, color.z, 0.3f+anim);
+
+			glBegin(GL_TRIANGLE_FAN);
+
+			glColor4fv(color2.ptr());
+			glVertex2f(x+w/2, y+h/2);
+
+			glColor4fv(color1.ptr());
+			glVertex2f(x-lightSize, y-lightSize);
+
+			glColor4fv(color1.ptr());
+			glVertex2f(x+w+lightSize, y-lightSize);
+
+			glColor4fv(color1.ptr());
+			glVertex2f(x+w+lightSize, y+h+lightSize);
+
+			glColor4fv(color1.ptr());
+			glVertex2f(x+w+lightSize, y+h+lightSize);
+
+			glColor4fv(color1.ptr());
+			glVertex2f(x-lightSize, y+h+lightSize);
+
+			glColor4fv(color1.ptr());
+			glVertex2f(x-lightSize, y-lightSize);
+
+			glEnd();
+		}
+
+	glPopAttrib();
+}
+
+void Renderer::renderComboBox(GraphicComboBox *comboBox) {
+	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
+		return;
+	}
+
+	if(comboBox->getVisible() == false) {
+		return;
+	}
+
+	int x= comboBox->getX();
+	int y= comboBox->getY();
+	int h= comboBox->getH();
+	int w= comboBox->getW();
+	if(h>0){
+		//background
+		glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
+		glEnable(GL_BLEND);
+
+		glColor4f(0.0f, 0.0f, 0.0f, 0.6f*comboBox->getFade()) ;
+
+		glBegin(GL_TRIANGLE_STRIP);
+			glVertex2i(x, y);
+			glVertex2i(x, y+h);
+			glVertex2i(x+w, y);
+			glVertex2i(x+w, y+h);
+		glEnd();
+		glPopAttrib();
+	}
+
+	renderButton(comboBox->getButton());
+
+	if( comboBox->isDropDownShowing()){
+		renderScrollBar(comboBox->getScrollbar());
+
+		if(comboBox->getPopupButtons()->size() != 0) {
+			for(int i = comboBox->getScrollbar()->getVisibleStart();
+					i <= comboBox->getScrollbar()->getVisibleEnd(); ++i) {
+				renderButton((* comboBox->getPopupButtons())[i]);
+			}
+		}
+	}
+
+	glPushAttrib(GL_ENABLE_BIT);
+	glEnable(GL_BLEND);
+
+	GraphicLabel label("ComboBox_render_label","label",false);
+	//label.setInstanceName("ComboBox_render_label");
+
+    label.init(comboBox->getX(), comboBox->getY(), comboBox->getW(), comboBox->getH(), true,comboBox->getTextColor());
+	label.setText(comboBox->getText());
+	label.setTextNativeTranslation(comboBox->getTextNativeTranslation());
+	label.setFont(comboBox->getFont());
+	label.setFont3D(comboBox->getFont3D());
+	renderLabel(&label);
+
+
+	//lighting
+
+		bool renderLighted= (comboBox->getLighted());
+
+
+		if(renderLighted) {
+			float anim= GraphicComponent::getAnim();
+			if(anim>0.5f) anim= 1.f-anim;
+
+			Vec3f color=comboBox->getTextColor();
+		    int x= comboBox->getX()+comboBox->getButton()->getW();
+		    int y= comboBox->getY();
+		    int h= comboBox->getH();
+		    int w= comboBox->getW()-comboBox->getButton()->getW();
 
 			const int lightSize= 0;
 			const Vec4f color1= Vec4f(color.x, color.y, color.z, 0.1f+anim*0.5f);
@@ -3994,60 +3992,60 @@ void Renderer::renderMessageBox(GraphicMessageBox *messageBox) {
 
 // ==================== complex rendering ====================
 
-VisibleQuadContainerVBOCache * Renderer::GetSurfaceVBOs(SurfaceData *cellData) {
-	std::map<uint32,VisibleQuadContainerVBOCache >::iterator iterFind = mapSurfaceVBOCache.find(cellData->uniqueId);
-	if(iterFind == mapSurfaceVBOCache.end()) {
-		Vec2f *texCoords		= &cellData->texCoords[0];
-		Vec2f *texCoordsSurface	= &cellData->texCoordsSurface[0];
-		Vec3f *vertices			= &cellData->vertices[0];
-		Vec3f *normals			= &cellData->normals[0];
-
-		VisibleQuadContainerVBOCache vboCache;
-
-		// Generate And Bind The Vertex Buffer
-		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBOVertices );					// Get A Valid Name
-		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBOVertices );			// Bind The Buffer
-		// Load The Data
-		glBufferDataARB( GL_ARRAY_BUFFER_ARB,  sizeof(Vec3f) * cellData->bufferCount, vertices, GL_STATIC_DRAW_ARB );
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-
-		assertGl();
-		// Generate And Bind The Texture Coordinate Buffer
-		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBOFowTexCoords );					// Get A Valid Name
-		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBOFowTexCoords );		// Bind The Buffer
-		// Load The Data
-		glBufferDataARB( GL_ARRAY_BUFFER_ARB, sizeof(Vec2f) * cellData->bufferCount, texCoords, GL_STATIC_DRAW_ARB );
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-
-		assertGl();
-		// Generate And Bind The Texture Coordinate Buffer
-		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBOSurfaceTexCoords );					// Get A Valid Name
-		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBOSurfaceTexCoords );		// Bind The Buffer
-		// Load The Data
-		glBufferDataARB( GL_ARRAY_BUFFER_ARB, sizeof(Vec2f) * cellData->bufferCount, texCoordsSurface, GL_STATIC_DRAW_ARB );
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-
-		assertGl();
-		// Generate And Bind The Normal Buffer
-		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBONormals );					// Get A Valid Name
-		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBONormals );			// Bind The Buffer
-		// Load The Data
-		glBufferDataARB( GL_ARRAY_BUFFER_ARB,  sizeof(Vec3f) * cellData->bufferCount, normals, GL_STATIC_DRAW_ARB );
-		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-
-		vboCache.hasBuiltVBOs = true;
-
-		mapSurfaceVBOCache[cellData->uniqueId] = vboCache;
-
-		// don't need the data in computer RAM anymore its in the GPU now
-		cellData->texCoords.clear();
-		cellData->texCoordsSurface.clear();
-		cellData->vertices.clear();
-		cellData->normals.clear();
-	}
-
-	return &mapSurfaceVBOCache[cellData->uniqueId];
-}
+//VisibleQuadContainerVBOCache * Renderer::GetSurfaceVBOs(SurfaceData *cellData) {
+//	std::map<uint32,VisibleQuadContainerVBOCache >::iterator iterFind = mapSurfaceVBOCache.find(cellData->uniqueId);
+//	if(iterFind == mapSurfaceVBOCache.end()) {
+//		Vec2f *texCoords		= &cellData->texCoords[0];
+//		Vec2f *texCoordsSurface	= &cellData->texCoordsSurface[0];
+//		Vec3f *vertices			= &cellData->vertices[0];
+//		Vec3f *normals			= &cellData->normals[0];
+//
+//		VisibleQuadContainerVBOCache vboCache;
+//
+//		// Generate And Bind The Vertex Buffer
+//		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBOVertices );					// Get A Valid Name
+//		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBOVertices );			// Bind The Buffer
+//		// Load The Data
+//		glBufferDataARB( GL_ARRAY_BUFFER_ARB,  sizeof(Vec3f) * cellData->bufferCount, vertices, GL_STATIC_DRAW_ARB );
+//		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+//
+//		assertGl();
+//		// Generate And Bind The Texture Coordinate Buffer
+//		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBOFowTexCoords );					// Get A Valid Name
+//		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBOFowTexCoords );		// Bind The Buffer
+//		// Load The Data
+//		glBufferDataARB( GL_ARRAY_BUFFER_ARB, sizeof(Vec2f) * cellData->bufferCount, texCoords, GL_STATIC_DRAW_ARB );
+//		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+//
+//		assertGl();
+//		// Generate And Bind The Texture Coordinate Buffer
+//		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBOSurfaceTexCoords );					// Get A Valid Name
+//		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBOSurfaceTexCoords );		// Bind The Buffer
+//		// Load The Data
+//		glBufferDataARB( GL_ARRAY_BUFFER_ARB, sizeof(Vec2f) * cellData->bufferCount, texCoordsSurface, GL_STATIC_DRAW_ARB );
+//		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+//
+//		assertGl();
+//		// Generate And Bind The Normal Buffer
+//		glGenBuffersARB( 1, (GLuint*)&vboCache.m_nVBONormals );					// Get A Valid Name
+//		glBindBufferARB( GL_ARRAY_BUFFER_ARB, vboCache.m_nVBONormals );			// Bind The Buffer
+//		// Load The Data
+//		glBufferDataARB( GL_ARRAY_BUFFER_ARB,  sizeof(Vec3f) * cellData->bufferCount, normals, GL_STATIC_DRAW_ARB );
+//		glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+//
+//		vboCache.hasBuiltVBOs = true;
+//
+//		mapSurfaceVBOCache[cellData->uniqueId] = vboCache;
+//
+//		// don't need the data in computer RAM anymore its in the GPU now
+//		cellData->texCoords.clear();
+//		cellData->texCoordsSurface.clear();
+//		cellData->vertices.clear();
+//		cellData->normals.clear();
+//	}
+//
+//	return &mapSurfaceVBOCache[cellData->uniqueId];
+//}
 
 void Renderer::ReleaseSurfaceVBOs() {
 	for(std::map<uint32,VisibleQuadContainerVBOCache>::iterator iterFind = mapSurfaceVBOCache.begin();
@@ -4305,9 +4303,9 @@ void Renderer::MapRenderer::Layer::render(VisibleQuadContainerCache &qCache) {
 		return;
 	}
 
-	const bool renderOnlyVisibleQuad = true;
-
-	if(renderOnlyVisibleQuad == true) {
+//	const bool renderOnlyVisibleQuad = true;
+//
+//	if(renderOnlyVisibleQuad == true) {
 		vector<pair<int,int> > rowsToRender;
 
 		if(rowsToRenderCache.find(qCache.lastVisibleQuad) != rowsToRenderCache.end()) {
@@ -4363,20 +4361,20 @@ void Renderer::MapRenderer::Layer::render(VisibleQuadContainerCache &qCache) {
 				glDrawRangeElements(GL_TRIANGLES,rowsToRender[i].first,rowsToRender[i].second,indexCount,GL_UNSIGNED_INT,_bindVBO(vbo_indices,indices,GL_ELEMENT_ARRAY_BUFFER_ARB));
 			}
 		}
-	}
-	else {
-		glVertexPointer(3,GL_FLOAT,0,_bindVBO(vbo_vertices,vertices));
-		glNormalPointer(GL_FLOAT,0,_bindVBO(vbo_normals,normals));
-
-		glClientActiveTexture(Renderer::fowTexUnit);
-		glTexCoordPointer(2,GL_FLOAT,0,_bindVBO(vbo_fowTexCoords,fowTexCoords));
-
-		glClientActiveTexture(Renderer::baseTexUnit);
-		glBindTexture(GL_TEXTURE_2D,textureHandle);
-		glTexCoordPointer(2,GL_FLOAT,0,_bindVBO(vbo_surfTexCoords,surfTexCoords));
-
-		glDrawElements(GL_TRIANGLES,indexCount,GL_UNSIGNED_INT,_bindVBO(vbo_indices,indices,GL_ELEMENT_ARRAY_BUFFER_ARB));
-	}
+//	}
+//	else {
+//		glVertexPointer(3,GL_FLOAT,0,_bindVBO(vbo_vertices,vertices));
+//		glNormalPointer(GL_FLOAT,0,_bindVBO(vbo_normals,normals));
+//
+//		glClientActiveTexture(Renderer::fowTexUnit);
+//		glTexCoordPointer(2,GL_FLOAT,0,_bindVBO(vbo_fowTexCoords,fowTexCoords));
+//
+//		glClientActiveTexture(Renderer::baseTexUnit);
+//		glBindTexture(GL_TEXTURE_2D,textureHandle);
+//		glTexCoordPointer(2,GL_FLOAT,0,_bindVBO(vbo_surfTexCoords,surfTexCoords));
+//
+//		glDrawElements(GL_TRIANGLES,indexCount,GL_UNSIGNED_INT,_bindVBO(vbo_indices,indices,GL_ELEMENT_ARRAY_BUFFER_ARB));
+//	}
 }
 
 void Renderer::MapRenderer::renderVisibleLayers(const Map* map,float coordStep,VisibleQuadContainerCache &qCache) {
@@ -5678,6 +5676,15 @@ void Renderer::renderSelectionEffects(int healthbarMode) {
 					}
 				}
 			}
+
+			//meeting point arrow
+			if(unit->getType()->getMeetingPoint()) {
+				Vec2i pos= unit->getMeetingPos();
+				map->clampPos(pos);
+
+				Vec3f arrowTarget= Vec3f(pos.x, map->getCell(pos)->getHeight(), pos.y);
+				renderArrow(unit->getCurrVectorFlat(), arrowTarget, Vec3f(0.f, 0.f, 1.f), 0.3f);
+			}
 		}
 	}
 
@@ -5727,15 +5734,6 @@ void Renderer::renderSelectionEffects(int healthbarMode) {
 
 					renderArrow(unit->getCurrVectorFlat(), arrowTarget, arrowColor, 0.3f);
 				}
-			}
-
-			//meeting point arrow
-			if(unit->getType()->getMeetingPoint()) {
-				Vec2i pos= unit->getMeetingPos();
-				map->clampPos(pos);
-
-				Vec3f arrowTarget= Vec3f(pos.x, map->getCell(pos)->getHeight(), pos.y);
-				renderArrow(unit->getCurrVectorFlat(), arrowTarget, Vec3f(0.f, 0.f, 1.f), 0.3f);
 			}
 		}
 	}
@@ -6696,12 +6694,8 @@ void Renderer::renderDisplay() {
  	//down images
 	for(int i=0; i<Display::downCellCount; ++i){
 		if(display->getDownImage(i)!=NULL){
-			if(display->getDownLighted(i)){
-                glColor3f(1.f, 1.f, 1.f);
-			}
-			else{
-                glColor3f(0.3f, 0.3f, 0.3f);
-			}
+			Vec3f c=display->getDownImageColor(i);
+			glColor3f(c.x,c.y,c.z );
 
 			int x= metrics.getDisplayX()+display->computeDownX(i);
 			int y= metrics.getDisplayY()+display->computeDownY(i);
@@ -7133,9 +7127,9 @@ void Renderer::selectUsingFrustumSelection(Selection::UnitContainer &units,
 							object->getPos().x, object->getPos().y, object->getPos().z, 1);
 					if(insideQuad == true) {
 						obj = object;
-						if(withObjectSelection == true) {
-							break;
-						}
+						//if(withObjectSelection == true) {
+						break;
+						//}
 					}
 				}
 			}
@@ -7685,31 +7679,31 @@ void Renderer::loadConfig() {
 	}
 }
 
-Texture2D *Renderer::saveScreenToTexture(int x, int y, int width, int height) {
-	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-	Config &config= Config::getInstance();
-	Texture2D::Filter textureFilter = strToTextureFilter(config.getString("Filter"));
-	int maxAnisotropy				= config.getInt("FilterMaxAnisotropy");
-
-	Texture2D *texture = GraphicsInterface::getInstance().getFactory()->newTexture2D();
-	texture->setForceCompressionDisabled(true);
-	texture->setMipmap(false);
-	Pixmap2D *pixmapScreenShot = texture->getPixmap();
-	pixmapScreenShot->init(width, height, 3);
-	texture->init(textureFilter,maxAnisotropy);
-
-	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-	//glFinish();
-
-	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-	glReadPixels(x, y, pixmapScreenShot->getW(), pixmapScreenShot->getH(),
-				 GL_RGB, GL_UNSIGNED_BYTE, pixmapScreenShot->getPixels());
-
-	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-	return texture;
-}
+//Texture2D *Renderer::saveScreenToTexture(int x, int y, int width, int height) {
+//	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//	Config &config= Config::getInstance();
+//	Texture2D::Filter textureFilter = strToTextureFilter(config.getString("Filter"));
+//	int maxAnisotropy				= config.getInt("FilterMaxAnisotropy");
+//
+//	Texture2D *texture = GraphicsInterface::getInstance().getFactory()->newTexture2D();
+//	texture->setForceCompressionDisabled(true);
+//	texture->setMipmap(false);
+//	Pixmap2D *pixmapScreenShot = texture->getPixmap();
+//	pixmapScreenShot->init(width, height, 3);
+//	texture->init(textureFilter,maxAnisotropy);
+//
+//	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//	//glFinish();
+//
+//	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//	glReadPixels(x, y, pixmapScreenShot->getW(), pixmapScreenShot->getH(),
+//				 GL_RGB, GL_UNSIGNED_BYTE, pixmapScreenShot->getPixels());
+//
+//	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//	return texture;
+//}
 
 void Renderer::saveScreen(const string &path,int w, int h) {
 	const Metrics &sm= Metrics::getInstance();
@@ -7902,7 +7896,7 @@ vector<Unit *> Renderer::renderUnitsFast(bool renderingShadows, bool colorPickin
 					unitsList.push_back(unit);
 				}
 
-				modelRenderer->render(model,rmSelection);
+				modelRenderer->render(model,renderingShadows?rmShadows:rmSelection);
 
 				glPopMatrix();
 
@@ -8041,14 +8035,13 @@ void Renderer::checkGlCaps() {
  		throw megaglest_runtime_error(message.c_str(),true);
 	}
 
-	//opengl 1.3
-	//if(!isGlVersionSupported(1, 3, 0)) {
-	if(glewIsSupported("GL_VERSION_1_3") == false) {
+	//opengl 2.1
+	if(glewIsSupported("GL_VERSION_2_1") == false) {
 		string message;
 
 		message += "Your system supports OpenGL version [";
  		message += getGlVersion() + string("]\n");
- 		message += "MegaGlest needs at least version 1.3 to work\n";
+ 		message += "MegaGlest needs at least version 2.1 to work\n";
  		message += "You may solve this problem by installing your latest video card drivers";
 
  		throw megaglest_runtime_error(message.c_str(),true);
@@ -8304,111 +8297,111 @@ void Renderer::render2dMenuSetup() {
 	//if(SystemFlags::VERBOSE_MODE_ENABLED) printf("In [%s::%s %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
 }
 
-void Renderer::init3dListMenu(const MainMenu *mm) {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	//this->mm3d = mm;
-	//printf("In [%s::%s Line: %d] this->custom_mm3d [%p] this->mm3d [%p]\n",__FILE__,__FUNCTION__,__LINE__,this->custom_mm3d,this->mm3d);
-
-/*
-	assertGl();
-
-    if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-	const Metrics &metrics= Metrics::getInstance();
-	//const MenuBackground *mb= mm->getConstMenuBackground();
-	const MenuBackground *mb = NULL;
-	if(mm != NULL) {
-		mb = mm->getConstMenuBackground();
-	}
-
-	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-	if(this->customlist3dMenu != NULL) {
-		*this->customlist3dMenu = glGenLists(1);
-		assertGl();
-	}
-	else {
-		list3dMenu= glGenLists(1);
-		assertGl();
-		list3dMenuValid=true;
-	}
-
-	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-	if(this->customlist3dMenu != NULL) {
-		glNewList(*this->customlist3dMenu, GL_COMPILE);
-	}
-	else {
-		glNewList(list3dMenu, GL_COMPILE);
-	}
-
-		if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-		//misc
-		glViewport(0, 0, metrics.getScreenW(), metrics.getScreenH());
-		glClearColor(0.4f, 0.4f, 0.4f, 1.f);
-		glFrontFace(GL_CW);
-		glEnable(GL_CULL_FACE);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluPerspective(perspFov, metrics.getAspectRatio(), perspNearPlane, 1000000);
-
-		//texture state
-		glEnable(GL_TEXTURE_2D);
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-		//material state
-		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, defSpecularColor.ptr());
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, defAmbientColor.ptr());
-		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, defDiffuseColor.ptr());
-		glColor4fv(defColor.ptr());
-		glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
-
-		//blend state
-		glDisable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		//alpha test state
-		glEnable(GL_ALPHA_TEST);
-		glAlphaFunc(GL_GREATER, 0.f);
-
-		//depth test state
-		glEnable(GL_DEPTH_TEST);
-		glDepthMask(GL_TRUE);
-		glDepthFunc(GL_LESS);
-
-		//lighting state
-		glEnable(GL_LIGHTING);
-
-		//matrix mode
-		glMatrixMode(GL_MODELVIEW);
-
-		//stencil test
-		glDisable(GL_STENCIL_TEST);
-
-		if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-		//fog
-		if(mb != NULL && mb->getFog()){
-			if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-			glEnable(GL_FOG);
-			glFogi(GL_FOG_MODE, GL_EXP2);
-			glFogf(GL_FOG_DENSITY, mb->getFogDensity());
-		}
-
-		if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-	glEndList();
-
-	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
-
-	//assert
-	assertGl();
-*/
-}
+//void Renderer::init3dListMenu(const MainMenu *mm) {
+//	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
+//		return;
+//	}
+//
+//	//this->mm3d = mm;
+//	//printf("In [%s::%s Line: %d] this->custom_mm3d [%p] this->mm3d [%p]\n",__FILE__,__FUNCTION__,__LINE__,this->custom_mm3d,this->mm3d);
+//
+///*
+//	assertGl();
+//
+//    if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//	const Metrics &metrics= Metrics::getInstance();
+//	//const MenuBackground *mb= mm->getConstMenuBackground();
+//	const MenuBackground *mb = NULL;
+//	if(mm != NULL) {
+//		mb = mm->getConstMenuBackground();
+//	}
+//
+//	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//	if(this->customlist3dMenu != NULL) {
+//		*this->customlist3dMenu = glGenLists(1);
+//		assertGl();
+//	}
+//	else {
+//		list3dMenu= glGenLists(1);
+//		assertGl();
+//		list3dMenuValid=true;
+//	}
+//
+//	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//	if(this->customlist3dMenu != NULL) {
+//		glNewList(*this->customlist3dMenu, GL_COMPILE);
+//	}
+//	else {
+//		glNewList(list3dMenu, GL_COMPILE);
+//	}
+//
+//		if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//		//misc
+//		glViewport(0, 0, metrics.getScreenW(), metrics.getScreenH());
+//		glClearColor(0.4f, 0.4f, 0.4f, 1.f);
+//		glFrontFace(GL_CW);
+//		glEnable(GL_CULL_FACE);
+//		glMatrixMode(GL_PROJECTION);
+//		glLoadIdentity();
+//		gluPerspective(perspFov, metrics.getAspectRatio(), perspNearPlane, 1000000);
+//
+//		//texture state
+//		glEnable(GL_TEXTURE_2D);
+//		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+//
+//		//material state
+//		glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, defSpecularColor.ptr());
+//		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, defAmbientColor.ptr());
+//		glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, defDiffuseColor.ptr());
+//		glColor4fv(defColor.ptr());
+//		glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+//
+//		//blend state
+//		glDisable(GL_BLEND);
+//		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//
+//		//alpha test state
+//		glEnable(GL_ALPHA_TEST);
+//		glAlphaFunc(GL_GREATER, 0.f);
+//
+//		//depth test state
+//		glEnable(GL_DEPTH_TEST);
+//		glDepthMask(GL_TRUE);
+//		glDepthFunc(GL_LESS);
+//
+//		//lighting state
+//		glEnable(GL_LIGHTING);
+//
+//		//matrix mode
+//		glMatrixMode(GL_MODELVIEW);
+//
+//		//stencil test
+//		glDisable(GL_STENCIL_TEST);
+//
+//		if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//		//fog
+//		if(mb != NULL && mb->getFog()){
+//			if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//			glEnable(GL_FOG);
+//			glFogi(GL_FOG_MODE, GL_EXP2);
+//			glFogf(GL_FOG_DENSITY, mb->getFogDensity());
+//		}
+//
+//		if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//	glEndList();
+//
+//	if(SystemFlags::getSystemSettingType(SystemFlags::debugSystem).enabled) SystemFlags::OutputDebug(SystemFlags::debugSystem,"In [%s::%s Line: %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
+//
+//	//assert
+//	assertGl();
+//*/
+//}
 
 void Renderer::render3dMenuSetup(const MainMenu *mm) {
 	//if(SystemFlags::VERBOSE_MODE_ENABLED) printf("In [%s::%s %d]\n",extractFileFromDirectoryPath(__FILE__).c_str(),__FUNCTION__,__LINE__);
@@ -8881,60 +8874,60 @@ void Renderer::renderProgressBar(int size, int x, int y, Font2D *font, int custo
 }
 
 
-void Renderer::renderTile(const Vec2i &pos) {
-	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
-		return;
-	}
-
-	const Map *map= game->getWorld()->getMap();
-	Vec2i scaledPos= pos * Map::cellScale;
-
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glTranslatef(-0.5f, 0.f, -0.5f);
-
-	glInitNames();
-	for(int i=0; i < Map::cellScale; ++i) {
-		for(int j=0; j < Map::cellScale; ++j) {
-
-			Vec2i renderPos= scaledPos + Vec2i(i, j);
-
-			glPushName(renderPos.y);
-			glPushName(renderPos.x);
-
-			glDisable(GL_CULL_FACE);
-
-			float h1 = map->getCell(renderPos.x, renderPos.y)->getHeight();
-			float h2 = map->getCell(renderPos.x, renderPos.y+1)->getHeight();
-			float h3 = map->getCell(renderPos.x+1, renderPos.y)->getHeight();
-			float h4 = map->getCell(renderPos.x+1, renderPos.y+1)->getHeight();
-
-			glBegin(GL_TRIANGLE_STRIP);
-			glVertex3f(
-				static_cast<float>(renderPos.x),
-				h1,
-				static_cast<float>(renderPos.y));
-			glVertex3f(
-				static_cast<float>(renderPos.x),
-				h2,
-				static_cast<float>(renderPos.y+1));
-			glVertex3f(
-				static_cast<float>(renderPos.x+1),
-				h3,
-				static_cast<float>(renderPos.y));
-			glVertex3f(
-				static_cast<float>(renderPos.x+1),
-				h4,
-				static_cast<float>(renderPos.y+1));
-			glEnd();
-
-			glPopName();
-			glPopName();
-		}
-	}
-
-	glPopMatrix();
-}
+//void Renderer::renderTile(const Vec2i &pos) {
+//	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
+//		return;
+//	}
+//
+//	const Map *map= game->getWorld()->getMap();
+//	Vec2i scaledPos= pos * Map::cellScale;
+//
+//	glMatrixMode(GL_MODELVIEW);
+//	glPushMatrix();
+//	glTranslatef(-0.5f, 0.f, -0.5f);
+//
+//	glInitNames();
+//	for(int i=0; i < Map::cellScale; ++i) {
+//		for(int j=0; j < Map::cellScale; ++j) {
+//
+//			Vec2i renderPos= scaledPos + Vec2i(i, j);
+//
+//			glPushName(renderPos.y);
+//			glPushName(renderPos.x);
+//
+//			glDisable(GL_CULL_FACE);
+//
+//			float h1 = map->getCell(renderPos.x, renderPos.y)->getHeight();
+//			float h2 = map->getCell(renderPos.x, renderPos.y+1)->getHeight();
+//			float h3 = map->getCell(renderPos.x+1, renderPos.y)->getHeight();
+//			float h4 = map->getCell(renderPos.x+1, renderPos.y+1)->getHeight();
+//
+//			glBegin(GL_TRIANGLE_STRIP);
+//			glVertex3f(
+//				static_cast<float>(renderPos.x),
+//				h1,
+//				static_cast<float>(renderPos.y));
+//			glVertex3f(
+//				static_cast<float>(renderPos.x),
+//				h2,
+//				static_cast<float>(renderPos.y+1));
+//			glVertex3f(
+//				static_cast<float>(renderPos.x+1),
+//				h3,
+//				static_cast<float>(renderPos.y));
+//			glVertex3f(
+//				static_cast<float>(renderPos.x+1),
+//				h4,
+//				static_cast<float>(renderPos.y+1));
+//			glEnd();
+//
+//			glPopName();
+//			glPopName();
+//		}
+//	}
+//
+//	glPopMatrix();
+//}
 
 void Renderer::renderQuad(int x, int y, int w, int h, const Texture2D *texture) {
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {
@@ -9328,12 +9321,12 @@ VisibleQuadContainerCache & Renderer::getQuadCache(	bool updateOnDirtyFrame,
 							}
 						}
 						else {
-							bool insideQuad = false;
+							//bool insideQuad = false;
 
-							if( !insideQuad) {
+							//if( !insideQuad) {
 								SurfaceCell *sc = map->getSurfaceCell(pos.x, pos.y);
-								insideQuad = CubeInFrustum(quadCache.frustumData, sc->getVertex().x, sc->getVertex().y, sc->getVertex().z, 0);
-							}
+								bool insideQuad = CubeInFrustum(quadCache.frustumData, sc->getVertex().x, sc->getVertex().y, sc->getVertex().z, 0);
+							//}
 							if( !insideQuad) {
 								SurfaceCell *sc = map->getSurfaceCell(pos.x+1, pos.y);
 								insideQuad = CubeInFrustum(quadCache.frustumData, sc->getVertex().x, sc->getVertex().y, sc->getVertex().z, 0);
@@ -9405,16 +9398,16 @@ std::pair<bool,Vec3f> Renderer::posInCellQuadCache(Vec2i pos) {
 	return result;
 }
 
-Vec3f Renderer::getMarkedCellScreenPosQuadCache(Vec2i pos) {
-	Vec3f result(-1,-1,-1);
-	if(std::find(
-			quadCache.visibleScaledCellList.begin(),
-			quadCache.visibleScaledCellList.end(),
-			pos) != quadCache.visibleScaledCellList.end()) {
-		result = quadCache.visibleScaledCellToScreenPosList[pos];
-	}
-	return result;
-}
+//Vec3f Renderer::getMarkedCellScreenPosQuadCache(Vec2i pos) {
+//	Vec3f result(-1,-1,-1);
+//	if(std::find(
+//			quadCache.visibleScaledCellList.begin(),
+//			quadCache.visibleScaledCellList.end(),
+//			pos) != quadCache.visibleScaledCellList.end()) {
+//		result = quadCache.visibleScaledCellToScreenPosList[pos];
+//	}
+//	return result;
+//}
 
 void Renderer::beginRenderToTexture(Texture2D **renderToTexture) {
 	if(GlobalStaticFlags::getIsNonGraphicalModeEnabled() == true) {

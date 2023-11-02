@@ -284,7 +284,7 @@ public:
 	void push(const Vec2i &pos)	{ push_front(pos); }
 	Vec2i peek() const			{return front();}
 	void pop()					{erase(begin());}
-	void condense();
+	//void condense();
 };
 
 
@@ -613,7 +613,7 @@ public:
 	bool isInteresting(InterestingUnitType iut) const;
 
     //set
-	void setCurrField(Field currField);
+	//void setCurrField(Field currField);
     void setCurrSkill(const SkillType *currSkill);
     void setCurrSkill(SkillClass sc);
 
@@ -636,7 +636,7 @@ public:
 	inline bool getVisible() const { return visible; }
 
 	//render related
-    const Model *getCurrentModel();
+    //const Model *getCurrentModel();
     Model *getCurrentModelPtr();
 	Vec3f getCurrMidHeightVector() const;
 	Vec3f getCurrVectorForParticlesystems() const;
@@ -654,7 +654,7 @@ public:
 		return NULL;
 	}
 	void replaceCurrCommand(Command *cmd);
-	int getCountOfProducedUnits(const UnitType *ut) const;
+	int getCountOfProducedUnitsPreExistence(const UnitType *ut) const;
 	unsigned int getCommandSize() const;
 	std::pair<CommandResult,string> giveCommand(Command *command, bool tryQueue = false);		//give a command
 	CommandResult finishCommand();						//command finished
@@ -668,7 +668,7 @@ public:
 
 	//observers
 	void addObserver(UnitObserver *unitObserver) ;
-	void removeObserver(UnitObserver *unitObserver);
+	//void removeObserver(UnitObserver *unitObserver);
 	void notifyObservers(UnitObserver::Event event);
 
     //other
@@ -720,7 +720,7 @@ public:
 	//std::vector<std::pair<Vec2i,Chrono> > getBadHarvestPosList() const { return badHarvestPosList; }
 	//void setBadHarvestPosList(std::vector<std::pair<Vec2i,Chrono> > value) { badHarvestPosList = value; }
 	void addBadHarvestPos(const Vec2i &value);
-	void removeBadHarvestPos(const Vec2i &value);
+	//void removeBadHarvestPos(const Vec2i &value);
 	inline bool isBadHarvestPos(const Vec2i &value,bool checkPeerUnits=true) const {
 		bool result = false;
 		if(badHarvestPosList.empty() == true) {

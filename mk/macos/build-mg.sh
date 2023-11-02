@@ -20,6 +20,37 @@ FORCE_EMBEDDED_LIBS=0
 LUA_FORCED_VERSION=0
 COMPILATION_WITHOUT=0
 
+# Some brew things don't appear to link correctly by themselves.
+if command -v brew &> /dev/null
+then
+	echo "Found brew. Adding links. (Note, this assumes system-wide brew install.)"
+	if [ -d "$HOMEBREW_PREFIX/opt/curl" ]
+	then
+		for f in $HOMEBREW_PREFIX/opt/{curl,zstd,brotli}
+		do
+			export PATH="$f/bin:$PATH"
+			export LDFLAGS="-L$f/lib $LDFLAGS"
+			export CPPFLAGS="-I$f/include $CPPFLAGS"
+			export PKG_CONFIG_PATH="$f/lib/pkgconfig:$PKG_CONFIG_PATH"
+		done
+	else
+		# Make github happy.
+		# TODO: is there a better way than this?
+		if ! typeset -p HOMEBREW_CELLAR 2> /dev/null | grep -q '^'
+		then
+			export HOMEBREW_CELLAR="/usr/local/Cellar"
+		fi
+
+		for f in $HOMEBREW_CELLAR/{curl,zstd,brotli}/*
+		do
+			export PATH="$f/bin:$PATH"
+			export LDFLAGS="-L$f/lib $LDFLAGS"
+			export CPPFLAGS="-I$f/include $CPPFLAGS"
+			export PKG_CONFIG_PATH="$f/lib/pkgconfig:$PKG_CONFIG_PATH"
+		done
+	fi
+fi
+
 while getopts "c:defhl:mnwxb" option; do
 	case "${option}" in
 		c) CPU_COUNT=${OPTARG};;
@@ -74,7 +105,8 @@ cd ${SCRIPTDIR}
 if [ "$BUILD_BUNDLE" -eq "1" ] && [ -d "p7zip" ]; then rm -rf "p7zip"; fi
 if [ -e ".p7zip.zip" ] && [ "$(find ./ -name ".p7zip.zip" -mtime +90)" ]; then rm ".p7zip.zip"; rm -rf "p7zip"; fi
 if [ ! -e ".p7zip.zip" ]; then
-	curl -L -o .p7zip.zip https://github.com/MegaGlest/megaglest-source/releases/download/3.2.3/p7zip.zip 2>/dev/null
+	curl -L -o .p7zip.zip https://github.com/MegaGlest/megaglest-source/releases/download/3.3.0/p7zip.zip 2>/dev/null
+	# ^sha256: 20ac3b0377054f8196c10e569bd6ec7c6ed06d519fa39e781ee6d27d7887588b
 	if [ -e ".p7zip.zip" ]; then touch -m ".p7zip.zip"; fi
 fi
 if [ ! -d "p7zip" ]; then unzip .p7zip.zip >/dev/null; fi
@@ -195,9 +227,10 @@ if [ "$MAKE_ONLY" -eq "0" ]; then
 	EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DWANT_DEV_OUTPATH=ON $WANT_STATIC_LIBS -DBREAKPAD_ROOT=$BREAKPAD_ROOT"
 	if [ "$BUILD_BUNDLE" -ne "1" ]; then
 		EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DCMAKE_INSTALL_PREFIX=''"
-		if [ "$GCC_FORCED" -ne "1" ] || [ "$USE_XCODE" -eq "1" ]; then
+		if [ "$GCC_FORCED" -ne "1" ] || [ "$USE_XCODE" -eq "1" ]; then :
 			#^ Remove this condition when it V will start working on gcc
-			EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DBUILD_MEGAGLEST_TESTS=ON"
+			#EXTRA_CMAKE_OPTIONS="${EXTRA_CMAKE_OPTIONS} -DBUILD_MEGAGLEST_TESTS=ON"
+			#^ Uncomment when it will start working on clang
 		else
 			rm -f ../megaglest_tests
 		fi

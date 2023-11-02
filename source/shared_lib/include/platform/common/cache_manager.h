@@ -40,7 +40,7 @@ static const char *getFolderTreeContentsCheckSumListRecursivelyCacheLookupKey2;
 
 protected:
 	static std::map<string, Mutex *> itemCacheMutexList;
-
+	static Mutex mutexMap;
 	typedef enum {
 		cacheItemGet,
 		cacheItemSet
@@ -49,7 +49,11 @@ protected:
 	template <typename T>
 	static Mutex & manageCachedItemMutex(string cacheKey) {
 		if(itemCacheMutexList.find(cacheKey) == itemCacheMutexList.end()) {
-			itemCacheMutexList[cacheKey] = new Mutex(CODE_AT_LINE);
+			MutexSafeWrapper safeMutex(&mutexMap);
+			if(itemCacheMutexList.find(cacheKey) == itemCacheMutexList.end()) {
+				itemCacheMutexList[cacheKey] = new Mutex(CODE_AT_LINE);
+			}
+			safeMutex.ReleaseLock();
 		}
 		Mutex *mutex = itemCacheMutexList[cacheKey];
 		return *mutex;
@@ -74,7 +78,7 @@ protected:
 				}
 
 			}
-			if(value != NULL) {
+			else {
 				try {
 					Mutex &mutexCache = manageCachedItemMutex<T>(cacheKey);
 					MutexSafeWrapper safeMutex(&mutexCache);
@@ -97,12 +101,14 @@ public:
 
 	CacheManager() { }
 	static void cleanupMutexes() {
+		MutexSafeWrapper safeMutex(&mutexMap);
 		for(std::map<string, Mutex *>::iterator iterMap = itemCacheMutexList.begin();
 			iterMap != itemCacheMutexList.end(); iterMap++) {
 			delete iterMap->second;
 			iterMap->second = NULL;
 		}
 		itemCacheMutexList.clear();
+		safeMutex.ReleaseLock();
 	}
 	~CacheManager() {
 		CacheManager::cleanupMutexes();
@@ -118,7 +124,7 @@ public:
 	}
 	template <typename T>
 	static void clearCachedItem(string cacheKey) {
-		return manageCachedItem<T>(cacheKey,NULL,cacheItemSet);
+		 manageCachedItem<T>(cacheKey,NULL,cacheItemSet);
 	}
 
 	template <typename T>

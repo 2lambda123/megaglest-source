@@ -29,7 +29,7 @@ private:
 
 	GraphicLabel labelInfo;
 	GraphicLabel labelScenario;
-	GraphicListBox listBoxScenario;
+	GraphicComboBox comboBoxScenario;
 	GraphicLabel labelScenarioName;
 
 
@@ -56,13 +56,15 @@ public:
 	virtual ~MenuStateScenario();
 
     void mouseClick(int x, int y, MouseButton mouseButton);
+	void mouseDoubleClick(int x, int y, MouseButton mouseButton){};
 	void mouseMove(int x, int y, const MouseState *mouseState);
+	void eventMouseWheel(int x, int y,int zDelta);
 	void render();
 	void update();
 
 	void launchGame();
 	void setScenario(int i);
-	int getScenarioCount() const	{ return listBoxScenario.getItemCount(); }
+	int getScenarioCount() const	{ return comboBoxScenario.getItemCount(); }
 
 	virtual void keyDown(SDL_KeyboardEvent key);
 
